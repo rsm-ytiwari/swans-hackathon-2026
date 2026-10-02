@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 from fastapi import APIRouter, Request
 
-from app.core import digest, facts
+from app.core import digest, facts, jobs
 from app.web.deps import templates, today
 
 router = APIRouter()
@@ -69,7 +69,9 @@ def firm_view(request: Request, mid: int, since: str | None = None):
         "stages": stages, "stage_index": stages.index(m["stage_name"]) if m["stage_name"] in stages else None,
         "incident_date": facts.field_value(con, mid, "incident_date"),
         "summary": facts.field_value(con, mid, "summary"),
-        "bottom_line": digest.bottom_line(con, mid, t),
+        # AI blocks come from the background job; until it finishes the page shows "running".
+        "ai_status": (ai := jobs.ensure(mid, t)),
+        "bottom_line": digest.bottom_line(con, mid, t) if ai["status"] == "done" else None,
         "do_next": [(x, _short_task(x.name, x.waiting_on)) for x in do_next[:5]], "do_next_more": max(0, len(do_next) - 5),
         "money": money,
         "coverage_line": _first_line(money["policy_limits"].value),

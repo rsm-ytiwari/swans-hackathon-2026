@@ -31,8 +31,11 @@
     <ol class="mt-2 space-y-1.5 text-[15px] leading-snug">
       {% for s in bottom_line %}<li>{{ s.text }}{% for src in s.sources %}{{ ui.cite(src) }}{% endfor %}</li>{% endfor %}
     </ol>
+    {% elif ai_status.status == "running" %}
+    <p class="mt-2 text-sm text-muted animate-pulse">AI analysis running… everything else on this page is already live. This refreshes on its own.</p>
+    <meta http-equiv="refresh" content="8">
     {% else %}
-    <p class="mt-2 text-sm text-muted">AI is off (no provider available). Everything else on this page is computed directly from Clio.</p>
+    <p class="mt-2 text-sm text-muted">AI is off (no provider available{{ ": " ~ ai_status.error if ai_status.error }}). Everything else on this page is computed directly from the case system.</p>
     {% endif %}
   </section>
 
