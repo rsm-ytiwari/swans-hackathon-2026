@@ -28,7 +28,7 @@
 {# A value that opens its source when clicked (dotted underline instead of a chip). #}
 {% macro ref(src, text) %}
 {% if src %}<button hx-get="{{ src.url }}" hx-target="#source-body" title="Open the source record"
-  class="text-left underline decoration-dotted decoration-[#C9CCD5] underline-offset-[5px] hover:decoration-brand hover:text-brand">{{ text }}</button>
+  class="text-left decoration-dotted underline-offset-[5px] hover:underline hover:decoration-brand hover:text-brand">{{ text }}</button>
 {% else %}{{ text }}{% endif %}
 {% endmacro %}
 

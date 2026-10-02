@@ -22,24 +22,25 @@
   </div>
 </header>
 
-<main class="max-w-[1500px] mx-auto px-4 sm:px-8 py-6 grid gap-5 items-start lg:grid-cols-[290px_390px_minmax(0,1fr)]">
+<main class="max-w-[1500px] mx-auto px-4 sm:px-8 py-6 grid gap-5 items-start lg:grid-cols-[300px_390px_minmax(0,1fr)]">
 
   {# LEFT: provider picker #}
   <nav class="rounded-card border border-line bg-white overflow-hidden" aria-label="Providers">
     <div class="px-4 pt-4 pb-2">{{ lbl("Providers") }}</div>
-    {% for r in rows %}
+    {# Open requests first, then already shared, then the rest (display order only). #}
+    {% set ordered = (rows | selectattr("p.requests") | list)
+                   + (rows | rejectattr("p.requests") | selectattr("last_sent") | list)
+                   + (rows | rejectattr("p.requests") | rejectattr("last_sent") | list) %}
+    {% for r in ordered %}
     {% set sel = selected and r.pid == selected.pid %}
-    <a href="/m/{{ mid }}/share?provider={{ r.pid }}"
-       class="block px-4 py-3 border-l-4 border-t border-hair {{ 'border-l-brand bg-brandbg' if sel else 'border-l-transparent hover:bg-surface' }}">
-      <div class="text-[15px] font-semibold text-ink leading-snug">{{ r.p.party.name }}</div>
-      {% if r.p.party.description %}<div class="text-xs text-muted mt-0.5">{{ r.p.party.description }}</div>{% endif %}
-      <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1.5 text-xs">
-        <span class="text-body font-semibold">{{ r.p.billed_total | money }} billed</span>
-        {% if r.p.requests %}<span class="rounded-full bg-warnbg text-warn px-2 py-0.5 font-semibold">{{ r.p.requests | length }} open {{ 'request' if r.p.requests|length == 1 else 'requests' }}</span>{% endif %}
-      </div>
-      <div class="text-xs mt-1 {{ 'text-ok font-medium' if r.last_sent else 'text-muted' }}">
-        {% if r.last_sent %}Shared {{ r.last_sent | short_date }} · viewed {{ r.views }}×{% else %}Not shared yet{% endif %}
-      </div>
+    <a href="/m/{{ mid }}/share?provider={{ r.pid }}" title="{{ r.p.party.name }}"
+       class="block px-4 py-2.5 border-l-4 border-t border-hair {{ 'border-l-brand bg-brandbg' if sel else 'border-l-transparent hover:bg-surface' }}">
+      <div class="text-[15px] font-semibold text-ink truncate">{{ r.p.party.name | short_name }}</div>
+      {% if sel and r.p.party.description %}<div class="text-[12.5px] text-muted truncate">{{ r.p.party.description }}</div>{% endif %}
+      <div class="text-[13px] text-muted truncate">
+        {{- r.p.billed_total | money if r.p.billed_total else "no charges" }}
+        {%- if r.p.requests %} · <span class="text-warn font-semibold">{{ r.p.requests | length }} open {{ 'request' if r.p.requests|length == 1 else 'requests' }}</span>{% endif %}
+        · {% if r.last_sent %}<span class="text-ok font-semibold">Shared {{ r.last_sent | mdate }} · viewed {{ r.views }}×</span>{% else %}Not shared{% endif %}</div>
     </a>
     {% else %}
     <p class="px-4 pb-4 text-sm text-muted">No treating providers on this matter yet.</p>
@@ -50,7 +51,8 @@
   {# MIDDLE: what they may see #}
   <section class="rounded-card border border-line bg-white p-5 space-y-5">
     <div>
-      {{ lbl("What " ~ selected.p.party.name ~ " can see") }}
+      {{ lbl("What this provider can see") }}
+      <p class="mt-1 text-[15px] font-semibold text-ink">{{ selected.p.party.name | short_name }}</p>
     </div>
     <form method="post" action="/m/{{ mid }}/share/{{ selected.pid }}/policy" class="space-y-5">
       {% set on_keys = sections.keys() | select('in', policy.sections) | list %}
@@ -121,7 +123,7 @@
   {# RIGHT: live preview, the same partial the provider sees #}
   <section class="rounded-card border border-line bg-white p-5 min-w-0">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
-      {{ lbl("Live preview · exactly what " ~ selected.p.party.name ~ " will see") }}
+      {{ lbl("Live preview") }}
       <a href="/m/{{ mid }}/share/{{ selected.pid }}/preview" target="_blank" class="text-sm font-semibold text-brand hover:underline">Open full preview →</a>
     </div>
     <div class="mt-3 rounded-xl border border-line bg-surface p-4 sm:p-5">

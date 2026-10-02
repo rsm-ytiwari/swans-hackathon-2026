@@ -22,7 +22,7 @@
 
 <div class="space-y-4">
   <header>
-    <p class="text-sm text-muted">For {{ pkt.provider_name }}</p>
+    <p class="text-sm text-muted">For {{ pkt.provider_name | short_name }}</p>
     <h1 class="text-[28px] sm:text-[32px] leading-tight font-extrabold tracking-tight text-ink mt-1">{{ pkt.patient_name }}</h1>
     <p class="text-sm text-muted mt-1">Your patient · last updated {{ pkt.generated_at | nice_date }}</p>
   </header>
@@ -31,14 +31,14 @@
   {% if pkt.status %}
   <section class="rounded-card border border-[#A9D5CB] bg-tealbg/50 p-5 sm:p-6">
     {{ lbl("Is the case still active?") }}
-    <p class="mt-2 text-xl sm:text-2xl font-extrabold text-teal leading-snug">{{ pkt.status.plain }}</p>
+    <p class="mt-2 text-[21px] sm:text-[24px] font-extrabold text-teal leading-snug">{{ pkt.status.plain }}</p>
     {% set stages = pkt.status.stages %}{% set cur = pkt.status.index %}
     {% if stages %}
     <ol class="mt-5 flex gap-1" aria-label="Case stages">
       {% for s in stages %}
       <li class="flex-1 min-w-0">
         <div class="h-2 rounded {{ 'bg-teal' if cur is not none and loop.index0 <= cur else 'bg-[#D3DCDA]' }}"></div>
-        <div class="hidden min-[500px]:block mt-1.5 text-[11px] tracking-tight leading-tight truncate pr-0.5 {{ 'text-ink font-bold' if loop.index0 == cur else 'text-muted' }}">{{ s }}</div>
+        <div class="hidden min-[500px]:block mt-1.5 text-[12px] leading-tight pr-0.5 {{ 'text-ink font-bold' if loop.index0 == cur else 'text-muted' }}" style="hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word" lang="en">{{ s }}</div>
       </li>
       {% endfor %}
     </ol>

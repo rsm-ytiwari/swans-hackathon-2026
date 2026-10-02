@@ -5,7 +5,7 @@
 {% if preview %}
 <div class="bg-warnbg border-b border-[#F2C98F] text-warn text-sm">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
-    <span>Preview only: this is exactly what {{ pkt.provider_name }} will see.</span>
+    <span>Preview only: this is exactly what {{ pkt.provider_name | short_name }} will see.</span>
     <span class="flex items-center gap-3">
       <a href="/m/{{ mid }}/share?provider={{ pid }}" class="underline">← back to sharing</a>
       <form method="post" action="/m/{{ mid }}/share/{{ pid }}/publish">
@@ -17,7 +17,7 @@
 {% endif %}
 <header class="bg-white border-b border-line">
   <div class="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted">
-    <span>Shared with <strong class="text-ink">{{ pkt.provider_name }}</strong></span>
+    <span>Shared with <strong class="text-ink">{{ pkt.provider_name | short_name }}</strong></span>
     <span>Read-only · secure link</span>
   </div>
 </header>
