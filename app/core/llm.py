@@ -117,12 +117,17 @@ def _gemini(model, system, prompt, schema, max_tokens):
         body["systemInstruction"] = {"parts": [{"text": system}]}
     if schema is not None:
         body["generationConfig"]["responseMimeType"] = "application/json"
-    resp = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"]},
-        json=body,
-        timeout=120,
-    )
+    # Gemini returns intermittent 503/429 under load; retry with backoff before falling through.
+    for attempt in range(4):
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            headers={"x-goog-api-key": os.environ["GEMINI_API_KEY"].strip()},
+            json=body,
+            timeout=180,
+        )
+        if resp.status_code not in (429, 500, 502, 503, 504) or attempt == 3:
+            break
+        time.sleep(2 * 2**attempt)
     resp.raise_for_status()
     j = resp.json()
     text = "".join(p.get("text", "") for p in j["candidates"][0]["content"]["parts"])
