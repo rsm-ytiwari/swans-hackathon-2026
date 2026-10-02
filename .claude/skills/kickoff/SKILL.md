@@ -26,7 +26,7 @@ number you did not get from the brief or the reps `ASSUMED`.**
 4. **Stop.** Show this and wait for the humans' answers or "proceed with assumptions."
 
 ## Step 2: Diagnose + money
-- As-is steps: actor · action · touch time · wait time · failure mode. Mark the 1–3 leaks.
+- As-is steps: actor · action · touch time · wait time · failure mode. Mark the real leaks (however many there are).
 - Money: which lever(s) from `docs/domain.md` it hits. One line: *"Attacks lever __ by __; ≈ $__/case or
   __ cases/month (ASSUMED where unsourced)."*
 
