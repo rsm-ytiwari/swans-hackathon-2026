@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core import facts, status
 from app.web import firm, provider
-from app.web.deps import serve_document, templates
+from app.web.deps import serve_document, templates, today
 
 app = FastAPI(title="Case digest")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
@@ -60,12 +60,39 @@ def _run_sync() -> None:
         _sync.update(status="error", message=f"Sync failed: {type(e).__name__}: {str(e)[:300]}")
 
 
+def _matter_card(con, m, t) -> dict:
+    """One row of the matters list: who, stage, the worst overdue item, flags. All computed from clio.db."""
+    mid = m["clio_id"]
+    stages = facts.stages(con, mid)
+    tasks = facts.tasks(con, mid, t)
+    worst = firm._blocker(tasks["overdue"])
+    fl = firm._flags(con, mid, t)
+    items = fl["items"] if fl else []
+    incident = facts.field_value(con, mid, "incident_date")
+    client = facts.client(con, mid)
+    contact = facts.last_contact_with(con, mid, client.contact_id) if client else None
+    return {
+        "m": m, "initials": firm._initials(m["client_name"]),
+        "summary": firm._first_line(facts.field_value(con, mid, "summary").value) or m["description"],
+        "stages": stages, "stage_index": stages.index(m["stage_name"]) if m["stage_name"] in stages else None,
+        "age": facts.age(facts._d(incident.value) or facts._d(m["open_date"]), t),
+        "worst": worst, "overdue": len(tasks["overdue"]), "open": len(tasks["overdue"]) + len(tasks["upcoming"]) + len(tasks["later"]),
+        "flags_high": sum(1 for f in items if f.severity == "high"), "flags": len(items),
+        "billed": facts.money(con, mid)["provider_billed_total"],
+        "contact_days": (t - contact.when).days if contact and contact.when else None,
+        "from_file": str(m["display_number"]).startswith("SEED-"),  # app.seed_load numbers seed matters SEED-…
+    }
+
+
 @app.get("/")
 def home(request: Request):
-    """Every loaded matter, plus a plain-language status of Clio, data and AI (what's missing and how to fix it)."""
-    con = facts.connect()
+    """Every loaded matter as a one-line answer (stage, what's overdue, red flags), plus a plain-language
+    status of Clio, data and AI (what's missing and how to fix it)."""
+    con, t = facts.connect(), today()
+    cards = [_matter_card(con, m, t) for m in facts.matters(con)]
+    cards.sort(key=lambda c: (c["worst"] is None, -(c["worst"]["days"] if c["worst"] else 0), c["from_file"]))
     return templates.TemplateResponse(request, "home.html", {
-        "matters": facts.matters(con), "checks": status.all_checks(), "sync": _sync})
+        "cards": cards, "checks": status.all_checks(), "sync": _sync, "today": t})
 
 
 @app.post("/sync")

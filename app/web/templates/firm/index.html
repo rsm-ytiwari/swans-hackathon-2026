@@ -73,7 +73,9 @@
     <div class="flex gap-3.5 items-center bg-badbg rounded-[10px] px-4 py-2.5 flex-wrap">
       <span class="text-[12px] font-extrabold text-white bg-bad rounded-md px-2 py-1">{{ "BLOCKED" if blocker.blocked else "OVERDUE" }}</span>
       <p class="flex-[1_1_380px] text-[15.5px] font-semibold text-ink">
-        {% if blocker.blocked %}Waiting on {{ blocker.who | short_name }} for {{ blocker.label[:1].lower() ~ blocker.label[1:] }}{% else %}Our team: {{ blocker.label[:1].lower() ~ blocker.label[1:] }}{% endif %} · <strong class="font-extrabold text-bad whitespace-nowrap">{{ blocker.days }} day{{ "" if blocker.days == 1 else "s" }} overdue</strong>{{ ui.cite(blocker.task.source) }}</p>
+        {% set verbs = ["get", "obtain", "confirm", "send", "request", "reconcile", "chase", "order", "follow", "schedule", "call", "review", "file", "serve", "prepare", "sign", "collect"] %}
+        {%- set task = blocker.label[:1].lower() ~ blocker.label[1:] -%}
+        {% if blocker.blocked %}Waiting on {{ blocker.who | short_name }}{{ ": " if task.split(" ")[0] in verbs else " for " }}{{ task }}{% else %}Our team: {{ blocker.label[:1].lower() ~ blocker.label[1:] }}{% endif %} · <strong class="font-extrabold text-bad whitespace-nowrap">{{ blocker.days }} day{{ "" if blocker.days == 1 else "s" }} overdue</strong>{{ ui.cite(blocker.task.source) }}</p>
     </div>
     {% endif %}
   </section>
@@ -146,6 +148,7 @@
           <p class="text-[13px] text-muted">Est. value <span class="text-[22px] font-extrabold text-ink ml-1">{% if mv.value %}{{ ui.ref(money.case_value.source, mv.value | money) }}{% else %}<span class="text-[14px] font-semibold text-warn">not in Clio</span>{% endif %}</span></p>
         </div>
         {% if mv.value or mv.billed or mv.reachable %}
+        {% if mv.value or mv.billed %}
         <div class="relative {{ 'pt-5' if mv.reachable else 'pt-1' }}">
           {% if mv.reachable %}<span class="absolute top-0 text-[11.5px] font-semibold text-bad whitespace-nowrap {{ '-translate-x-full pr-1' if mv.cov_pct > 70 else '-translate-x-1/2' if mv.cov_pct > 15 else '' }}" style="left: {{ mv.cov_pct }}%">Coverage {{ mv.reachable | kmoney }}</span>{% endif %}
           <div class="h-7 rounded-lg bg-chip overflow-hidden flex">
@@ -155,6 +158,7 @@
           {% if mv.reachable %}<div class="absolute top-[18px] -bottom-1 w-[2px] bg-bad" style="left: {{ mv.cov_pct }}%"></div>{% endif %}
           <div class="mt-1 flex justify-between text-[11.5px] text-muted"><span>$0</span><span>{% if mv.value %}{{ mv.value | kmoney }} est. value{% endif %}</span></div>
         </div>
+        {% endif %}
         <div class="grid grid-cols-3 gap-3 text-[13px]">
           <div><span class="inline-block w-2.5 h-2.5 rounded-sm bg-brand"></span> Medical billed<br>
             {% if mv.billed %}<strong class="text-[16px]">{{ mv.billed | money }}</strong>{% else %}<span class="block text-warn font-semibold">no charges in Clio</span>{% endif %}
@@ -208,7 +212,7 @@
           {% for r in providers %}
           <tr class="border-b border-hair align-top">
             <td class="py-2.5 pr-4 font-semibold">{{ ui.ref(r.p.party.source, r.p.party.name | short_name) }}<div class="text-[12.5px] font-normal text-muted truncate max-w-[340px]" title="{{ r.p.party.description }}">{{ r.p.party.description }}</div></td>
-            <td class="py-2.5 pr-4 w-48"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded bg-chip"><div class="h-1.5 rounded bg-brand" style="width: {{ (100 * r.p.billed_total / top) | round(1) if top else 0 }}%"></div></div><span class="tabular-nums">{{ r.p.billed_total | money if r.p.billed_total else "no charges" }}</span></div></td>
+            <td class="py-2.5 pr-4 w-48"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded {{ 'bg-chip' if r.p.billed_total else '' }}">{% if r.p.billed_total %}<div class="h-1.5 rounded bg-brand" style="width: {{ (100 * r.p.billed_total / top) | round(1) if top else 0 }}%"></div>{% endif %}</div><span class="tabular-nums">{{ r.p.billed_total | money if r.p.billed_total else "no charges" }}</span></div></td>
             <td class="py-2.5 pr-4">
               {% if r.overdue %}<span class="text-bad font-semibold">Overdue: {{ r.overdue[0].name.split(" - ")[-1] | truncate(40) }}</span>
               {% elif r.open %}<span class="text-warn font-semibold">Requested: {{ r.open[0].name.split(" - ")[-1] | truncate(40) }}</span>
