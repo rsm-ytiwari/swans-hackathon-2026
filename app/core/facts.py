@@ -118,7 +118,10 @@ def _d(value) -> date | None:
     try:
         return datetime.fromisoformat(str(value)).date()
     except ValueError:
-        return date.fromisoformat(str(value)[:10])
+        try:
+            return date.fromisoformat(str(value)[:10])
+        except ValueError:
+            return None  # unparseable date in the source data: treat as missing, never crash a page
 
 
 def _rows(con, sql, *args):
@@ -345,7 +348,7 @@ def money(con, mid: int) -> dict:
         "policy_limits_confirmed": field_value(con, mid, "policy_limits_confirmed"),
         "specials_field": specials,
         "provider_billed_total": billed,
-        "specials_mismatch": specials.value is not None and abs(float(specials.value) - billed) > 0.5,
+        "specials_mismatch": number(specials.value) is not None and abs(number(specials.value) - billed) > 0.5,
         "firm_costs_total": round(sum(float(r["total"]) for r in firm_costs), 2),
         "firm_costs": [Charge(r["date"], float(r["total"]), r["note"] or "",
                               Source("Activity", r["clio_id"], f"Cost {r['date']}")) for r in firm_costs],
@@ -404,6 +407,17 @@ _DOLLARS = re.compile(r"\$\s?(\d[\d,]*(?:\.\d+)?)")
 _SPLIT_LIMIT = re.compile(r"\$\s?(\d[\d,]*)\s*/\s*\$\s?(\d[\d,]*)")
 
 
+def number(value) -> float | None:
+    """A money/number custom field as a float: 375000, "375000", "$375,000.00". Text like "TBD" or "n/a" is
+    missing data, not an error: returns None so no page can crash on what a user typed into Clio."""
+    if value is None or value == "":
+        return None
+    try:
+        return float(str(value).replace("$", "").replace(",", "").strip())
+    except ValueError:
+        return None
+
+
 def dollars(text) -> list[float]:
     return [float(a.replace(",", "")) for a in _DOLLARS.findall(str(text or ""))]
 
@@ -446,4 +460,4 @@ def milestones(con, mid: int, today: date | None = None) -> list[Event]:
             d = min(hits, key=lambda x: x.received)
             out.append(Event(_d(d.received), "milestone", label, d.name, d.source))
     out.append(Event(today, "today", "Today", "", Source("Matter", mid, "today")))
-    return sorted(out, key=lambda e: e.when)
+    return sorted((e for e in out if e.when), key=lambda e: e.when)  # unparseable dates are left out

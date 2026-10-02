@@ -73,7 +73,7 @@ The rule: **dates, deadlines, money and checks are code; AI is used only for rea
 
 ## Tests
 
-`uv run pytest app/tests` (47 tests):
+`uv run pytest app/tests` (48 tests):
 
 | File | Proves |
 |---|---|
@@ -84,6 +84,7 @@ The rule: **dates, deadlines, money and checks are code; AI is used only for rea
 | `test_seed_load.py` | Loading a case from a JSON file: deterministic ids, missing sections |
 | `test_sharing_web.py` | Forged sharing settings ignored; bad links 404; files outside the packet 403; no strategy values on a published page |
 | `test_no_hardcoding.py` | No loaded case's data appears anywhere in the code |
+| `test_bad_data.py` | A case full of bad data (text in money fields, impossible dates, unknown stage, nameless contacts, tasks without due dates) renders every page, shares and publishes without crashing |
 
 ## Run it
 
@@ -140,7 +141,7 @@ app/seed_load.py  Clio-shaped JSON file -> the same tables
 app/core/       facts (code-computed), flags (rules + verified AI contradictions), digest (AI 3 lines),
                 sharing (provider packet + firewall), llm (one wrapper, cache, fallback), config, jobs, status
 app/web/        FastAPI routes (main, firm, provider) + Jinja/Tailwind/HTMX/Alpine templates
-app/tests/      47 tests (see above)
+app/tests/      48 tests (see above)
 data/synthetic/ fictional second case for testing on other data
 plan/           decisions (DECISIONS.md), timestamped build log (LOG.md), scope (v1.md), video script
 ```

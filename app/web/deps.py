@@ -20,6 +20,13 @@ def today() -> date:
     return date.fromisoformat(pinned) if pinned else date.today()
 
 
+def _as_date(v) -> date | None:
+    try:
+        return date.fromisoformat(str(v)[:10])
+    except ValueError:
+        return None
+
+
 def money(v) -> str:
     try:
         return f"${float(v):,.2f}".replace(".00", "")
@@ -30,7 +37,9 @@ def money(v) -> str:
 def nice_date(v) -> str:
     if not v:
         return "—"
-    d = v if isinstance(v, date) else date.fromisoformat(str(v)[:10])
+    d = v if isinstance(v, date) else _as_date(v)
+    if d is None:
+        return str(v)  # not a date: show what the source says rather than fail
     return d.strftime("%b %-d, %Y")
 
 
@@ -46,7 +55,9 @@ def jdate(v) -> str:
     """"Apr 23 ’23" for compact timelines."""
     if not v:
         return "—"
-    d = v if isinstance(v, date) else date.fromisoformat(str(v)[:10])
+    d = v if isinstance(v, date) else _as_date(v)
+    if d is None:
+        return str(v)  # not a date: show what the source says rather than fail
     return d.strftime("%b %-d ’%y")
 
 
@@ -116,7 +127,9 @@ def mdate(v) -> str:
     """"Oct 9" (no year) for near dates."""
     if not v:
         return "—"
-    d = v if isinstance(v, date) else date.fromisoformat(str(v)[:10])
+    d = v if isinstance(v, date) else _as_date(v)
+    if d is None:
+        return str(v)  # not a date: show what the source says rather than fail
     return d.strftime("%b %-d")
 
 

@@ -109,7 +109,7 @@ def rule_flags(con, mid: int, today: date) -> list[Flag]:
     money = facts.money(con, mid)
     specials = money["specials_field"]
     if money["specials_mismatch"]:
-        billed, claimed = money["provider_billed_total"], float(specials.value)
+        billed, claimed = money["provider_billed_total"], facts.number(specials.value)
         diff = abs(claimed - billed)
         top = sorted((c for p in facts.providers(con, mid, today) for c in p.charges),
                      key=lambda c: -c.amount)[:3]

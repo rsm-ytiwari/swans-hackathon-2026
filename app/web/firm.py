@@ -42,7 +42,7 @@ def _needs_answer(overdue, upcoming) -> str:
 
 def _money_bar(money) -> dict:
     """The four numbers for the worth-vs-coverage visual, all computed in code."""
-    value = float(money["case_value"].value) if money["case_value"].value else None
+    value = facts.number(money["case_value"].value)
     liens = facts.dollars(money["liens"].value)
     return {
         "value": value,
