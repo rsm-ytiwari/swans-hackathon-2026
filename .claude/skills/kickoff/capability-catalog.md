@@ -88,6 +88,7 @@ NLM ICD-10-CM API (free) ✅, NPI Registry API (free).
   **Anthropic SDK 1.x** (installed: 1.11) raises `TypeError` on `temperature`/`top_p` kwargs ✅.
 - **First-call schema compile is slow** ✅. → Warm up before the demo.
 - **Ollama 4096-token default context truncates silently** ✅. → `options.num_ctx=32768` on native `/api/chat`.
+- **Gemma 4 thinks by default:** a one-line classification took ~10 s; with `"think": false` it took ~0.6 s (tested tonight on the M4 Pro). Turn thinking on only for hard steps.
 - **Another patient's pages in the file.** → Extract name + DOB per page; quarantine mismatches. This doubles as a HIPAA-safety talking point.
 - **Handwriting:** the quote check can't verify it. → Mark "unverified" and send to H.
 - **Tables across pages.** → Merge, then re-check the sums in D.

@@ -48,6 +48,7 @@ def ollama_call() -> str:
             "format": SCHEMA,
             "stream": False,
             "keep_alive": "2h",
+            "think": False,  # Gemma 4 thinks by default: ~10s vs ~0.6s for a classification
             "options": {"temperature": 0, "num_ctx": 32768},
         },
         timeout=300,
