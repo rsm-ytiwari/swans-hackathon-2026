@@ -35,7 +35,7 @@
     <p class="mt-2 text-sm text-muted animate-pulse">AI analysis running… everything else on this page is already live. This refreshes on its own.</p>
     <meta http-equiv="refresh" content="8">
     {% else %}
-    <p class="mt-2 text-sm text-muted">AI is off (no provider available{{ ": " ~ ai_status.error if ai_status.error }}). Everything else on this page is computed directly from the case system.</p>
+    <p class="mt-2 text-sm text-bad">{{ ai_check.message if not ai_check.ok else "AI analysis failed: " ~ (ai_status.error or "the provider returned no usable answer") ~ ". Everything else on this page is computed directly from the case system." }}</p>
     {% endif %}
   </section>
 

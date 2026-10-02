@@ -6,13 +6,14 @@ Routes owned here are shared by both views: matter picker, click-to-source, docu
 Firm view routes live in app/web/firm.py, provider view routes in app/web/provider.py.
 """
 
+import threading
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.core import facts
+from app.core import facts, status
 from app.web import firm, provider
 from app.web.deps import serve_document, templates
 
@@ -22,13 +23,34 @@ app.include_router(firm.router)
 app.include_router(provider.router)
 
 
+_sync: dict = {"status": "idle", "message": ""}
+
+
+def _run_sync() -> None:
+    """Pull every open matter from Clio (read-only) into the local store, then reset AI jobs."""
+    from app.clio.client import ClioClient
+    from app.ingest import ingest_all
+    try:
+        ids = ingest_all(ClioClient())
+        _sync.update(status="done", message=f"Synced {len(ids)} matter(s) from Clio.")
+    except Exception as e:  # show the real reason (missing credentials, not authorized, network)
+        _sync.update(status="error", message=f"Sync failed: {type(e).__name__}: {str(e)[:300]}")
+
+
 @app.get("/")
 def home(request: Request):
+    """Every loaded matter, plus a plain-language status of Clio, data and AI (what's missing and how to fix it)."""
     con = facts.connect()
-    ms = facts.matters(con)
-    if len(ms) == 1:
-        return RedirectResponse(f"/m/{ms[0]['clio_id']}")
-    return templates.TemplateResponse(request, "home.html", {"matters": ms})
+    return templates.TemplateResponse(request, "home.html", {
+        "matters": facts.matters(con), "checks": status.all_checks(), "sync": _sync})
+
+
+@app.post("/sync")
+def sync():
+    if _sync["status"] != "running":
+        _sync.update(status="running", message="Syncing from Clio…")
+        threading.Thread(target=_run_sync, daemon=True).start()
+    return RedirectResponse("/", status_code=303)
 
 
 @app.get("/source/{clio_type}/{clio_id}")

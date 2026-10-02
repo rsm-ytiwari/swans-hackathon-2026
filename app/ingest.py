@@ -235,11 +235,20 @@ def ingest(client: ClioClient, matter_id: int, download_files: bool = True) -> d
     return counts
 
 
+def ingest_all(client: ClioClient, download_files: bool = True) -> list[int]:
+    """Ingest every open matter the account can see (read-only). Returns the matter ids."""
+    ids = [m["id"] for m in client.list("matters.json", status="open", fields=F.MATTER_LIST)]
+    for mid in ids:
+        ingest(client, mid, download_files=download_files)
+    return ids
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--matter", help="Clio matter id (or a search string that matches exactly one matter)")
     g.add_argument("--find", help="search matters by number/description and print their ids")
+    g.add_argument("--all", action="store_true", help="ingest every open matter in the Clio account")
     ap.add_argument("--no-files", action="store_true", help="skip document downloads")
     args = ap.parse_args(argv)
 
@@ -247,6 +256,11 @@ def main(argv=None) -> None:
     if args.find is not None:
         for mt in find_matters(client, args.find):
             print(f"{mt['id']}\t{mt.get('display_number')}\t{_name(mt.get('matter_stage'))}\t{mt.get('description')}")
+        return
+    if args.all:
+        for mid in ingest_all(client, download_files=not args.no_files):
+            print(f"matter {mid} ingested")
+        print(f"  {'(api requests)':<30} {client.request_count}")
         return
     matter_id = resolve_matter_id(client, args.matter)
     counts = ingest(client, matter_id, download_files=not args.no_files)

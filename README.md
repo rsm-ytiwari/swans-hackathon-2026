@@ -20,13 +20,16 @@ cp .env.example .env          # then fill in what you have (see "AI provider" be
 ```bash
 # A) From a Clio Manage account (read-only). Needs CLIO_CLIENT_ID / CLIO_CLIENT_SECRET in .env.
 uv run python -m app.clio.auth                    # one-time browser login
-uv run python -m app.ingest --matter <clio matter id>
+uv run python -m app.ingest --all                 # every open matter (or --matter <id>)
+# ...or click "Sync from Clio" on the home page once the app is running.
 
 # B) From a seed file shaped like the Sapini file (no Clio needed)
 uv run python -m app.seed_load path/to/case.json --docs path/to/documents/
 ```
 
-**Start the app** and open http://127.0.0.1:8000. It lists every loaded matter.
+**Start the app** and open http://127.0.0.1:8000. The home page lists every loaded matter and a
+**System status** box that says what is connected and, if something is missing (Clio login, AI key, no
+data), exactly what to add.
 
 ```bash
 uv run uvicorn app.web.main:app --port 8000
