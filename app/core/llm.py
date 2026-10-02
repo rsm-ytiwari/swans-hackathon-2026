@@ -314,6 +314,18 @@ def complete(
     errors: list[str] = []
     bad_output = False
 
+    # Any provider's cached answer first: if an earlier call fell back to a later provider, a page view
+    # must not wait on a live retry of the first one.
+    for name in _chain():
+        if name in _PROVIDERS:
+            model = _PROVIDERS[name][1]()
+            path = _cache_dir() / f"{_key(name, model, system, prompt, schema_json, max_tokens)}.json"
+            if path.exists():
+                c = json.loads(path.read_text())
+                data = schema.model_validate(json.loads(c["text"])) if schema else None
+                _log_usage(task, name, model, c["input_tokens"], c["output_tokens"], 0.0, True)
+                return LLMResult(c["text"], data, name, model, True, c["input_tokens"], c["output_tokens"], 0.0)
+
     for name in _chain():
         if name not in _PROVIDERS:
             errors.append(f"{name}: unknown provider")
