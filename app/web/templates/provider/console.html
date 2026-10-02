@@ -1,45 +1,134 @@
 {% extends "base.html" %}
-{% import "components/ui.html" as ui %}
 {% block title %}Share · {{ m.client_name }}{% endblock %}
 {% block body %}
-{# Functional console (look to be replaced from the Lovable design). Pick a provider → toggles → live preview → approve. #}
-<main class="max-w-6xl mx-auto px-6 py-6">
-  <a href="/m/{{ mid }}" class="text-sm text-muted hover:text-ink">← {{ m.client_name }}</a>
-  <h1 class="text-2xl font-semibold mt-1">Share with a provider</h1>
-  <div class="mt-5 grid md:grid-cols-3 gap-6">
-    <nav class="space-y-1">
-      {% for r in rows %}
-      <a href="?provider={{ r.pid }}" class="block rounded-lg px-3 py-2 {{ 'bg-white border border-brand' if selected and r.pid == selected.pid else 'hover:bg-white' }}">
-        <div class="text-sm font-medium">{{ r.p.party.name }}</div>
-        <div class="text-xs text-muted">{{ r.p.billed_total | money }} billed ·
-          {% if r.last_sent %}shared {{ r.last_sent | nice_date }} · viewed {{ r.views }}×{% else %}not shared yet{% endif %}</div>
-      </a>
-      {% endfor %}
-    </nav>
-    {% if selected %}
-    <section class="md:col-span-2 space-y-4">
-      <form method="post" action="/m/{{ mid }}/share/{{ selected.pid }}/policy" class="bg-white rounded-xl border border-line p-4">
-        <div class="text-xs font-semibold uppercase tracking-wide text-muted">{{ selected.p.party.name }} can see</div>
-        <div class="mt-2 grid sm:grid-cols-2 gap-x-6 gap-y-1">
-          {% for key, (label, _) in sections.items() if key != "shared_documents" %}
-          <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="{{ key }}" {{ 'checked' if key in policy.sections }} onchange="this.form.submit()"> {{ label }}</label>
-          {% endfor %}
-        </div>
-        <div class="mt-3 text-xs text-muted">🔒 Never shared: {{ never | join(", ") }}</div>
-      </form>
-      <div class="rounded-xl bg-surface border border-line p-4 space-y-4">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-semibold uppercase tracking-wide text-muted">Preview: exactly what they will see</span>
-          <form method="post" action="/m/{{ mid }}/share/{{ selected.pid }}/publish"><button class="rounded-lg bg-brand text-white px-3 py-1.5 text-sm">Approve & create link</button></form>
-        </div>
-        {% include "provider/_packet.html" %}
-      </div>
-      {% if selected.sent %}
-      <ul class="text-sm space-y-1">{% for s in selected.sent %}
-        <li><a class="text-brand underline" href="/p/{{ s.token }}" target="_blank">Link</a> approved {{ s.approved_at | nice_date }} · viewed {{ s.views }}×</li>{% endfor %}</ul>
-      {% endif %}
-    </section>
-    {% endif %}
+{# Attorney side: pick a provider (left) -> choose what they see (middle) -> live preview (right) -> approve. #}
+{% macro toggle(key, label, on) %}
+<li class="flex items-center justify-between gap-3 py-3 border-b border-hair last:border-0">
+  <label for="t-{{ key }}" class="text-[15px] text-ink cursor-pointer">{{ label }}</label>
+  <label class="relative inline-flex shrink-0 cursor-pointer">
+    <input id="t-{{ key }}" type="checkbox" name="{{ key }}" value="1" {{ 'checked' if on }} onchange="this.form.submit()" class="peer sr-only">
+    <span class="block w-10 h-6 rounded-full bg-[#D5D8E0] peer-checked:bg-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brandline transition-colors
+      after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:w-[18px] after:h-[18px] after:rounded-full after:bg-white after:transition-transform peer-checked:after:translate-x-4"></span>
+  </label>
+</li>
+{% endmacro %}
+{% macro lbl(text) %}<h2 class="text-xs font-bold uppercase tracking-[.08em] text-muted">{{ text }}</h2>{% endmacro %}
+
+<header class="bg-white border-b border-line">
+  <div class="max-w-[1500px] mx-auto px-4 sm:px-8 py-3.5 flex items-center gap-3 text-sm">
+    <a href="/m/{{ mid }}" class="text-brand font-semibold hover:underline">← back to case</a>
+    <span class="text-muted">/</span><span class="font-semibold">Share with a provider</span>
+    <span class="text-muted hidden sm:inline">· {{ m.client_name }}</span>
   </div>
+</header>
+
+<main class="max-w-[1500px] mx-auto px-4 sm:px-8 py-6 grid gap-5 items-start lg:grid-cols-[290px_390px_minmax(0,1fr)]">
+
+  {# LEFT: provider picker #}
+  <nav class="rounded-card border border-line bg-white overflow-hidden" aria-label="Providers">
+    <div class="px-4 pt-4 pb-2">{{ lbl("Providers") }}</div>
+    {% for r in rows %}
+    {% set sel = selected and r.pid == selected.pid %}
+    <a href="/m/{{ mid }}/share?provider={{ r.pid }}"
+       class="block px-4 py-3 border-l-4 border-t border-hair {{ 'border-l-brand bg-brandbg' if sel else 'border-l-transparent hover:bg-surface' }}">
+      <div class="text-[15px] font-semibold text-ink leading-snug">{{ r.p.party.name }}</div>
+      {% if r.p.party.description %}<div class="text-xs text-muted mt-0.5">{{ r.p.party.description }}</div>{% endif %}
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1.5 text-xs">
+        <span class="text-body font-semibold">{{ r.p.billed_total | money }} billed</span>
+        {% if r.p.requests %}<span class="rounded-full bg-warnbg text-warn px-2 py-0.5 font-semibold">{{ r.p.requests | length }} open {{ 'request' if r.p.requests|length == 1 else 'requests' }}</span>{% endif %}
+      </div>
+      <div class="text-xs mt-1 {{ 'text-ok font-medium' if r.last_sent else 'text-muted' }}">
+        {% if r.last_sent %}Shared {{ r.last_sent | short_date }} · viewed {{ r.views }}×{% else %}Not shared yet{% endif %}
+      </div>
+    </a>
+    {% else %}
+    <p class="px-4 pb-4 text-sm text-muted">No treating providers on this matter yet.</p>
+    {% endfor %}
+  </nav>
+
+  {% if selected %}
+  {# MIDDLE: what they may see #}
+  <section class="rounded-card border border-line bg-white p-5 space-y-5">
+    <div>
+      {{ lbl("What " ~ selected.p.party.name ~ " can see") }}
+    </div>
+    <form method="post" action="/m/{{ mid }}/share/{{ selected.pid }}/policy" class="space-y-5">
+      {% set on_keys = sections.keys() | select('in', policy.sections) | list %}
+      {% set off_keys = sections.keys() | reject('in', policy.sections) | list %}
+      <div>
+        {{ lbl("Shared with this provider") }}
+        <ul class="mt-1">{% for k in on_keys %}{{ toggle(k, sections[k][0], true) }}{% else %}<li class="py-3 text-sm text-muted">Nothing is shared yet.</li>{% endfor %}</ul>
+      </div>
+      <div>
+        {{ lbl("Not shared") }}
+        <ul class="mt-1">{% for k in off_keys %}{{ toggle(k, sections[k][0], false) }}{% else %}<li class="py-3 text-sm text-muted">Everything shareable is on.</li>{% endfor %}</ul>
+      </div>
+      {% if 'shared_documents' in policy.sections %}
+      <div>
+        {{ lbl("Which documents from other providers?") }}
+        <ul class="mt-1 max-h-48 overflow-y-auto">
+          {% for d in other_docs %}
+          <li class="py-2 border-b border-hair last:border-0"><label class="flex items-start gap-2 text-sm text-ink">
+            <input type="checkbox" name="doc" value="{{ d.doc_id }}" {{ 'checked' if d.doc_id in policy.shared_doc_ids }} onchange="this.form.submit()" class="mt-0.5 accent-[#3B2BD9]">
+            <span>{{ d.name | doc_title }}{% if d.pages %} · {{ d.pages }} {{ 'page' if d.pages == 1 else 'pages' }}{% endif %}<span class="block text-xs text-muted">{{ d.name | replace('__created__', ' · ') | truncate(70) }}</span></span>
+          </label></li>
+          {% else %}<li class="text-sm text-muted py-2">No clinical documents from other providers.</li>{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </form>
+
+    <div>
+      {{ lbl("Never shared") }}
+      <ul class="mt-1">
+        {% for n in never %}
+        <li class="flex items-center justify-between gap-3 py-3 border-b border-hair last:border-0 text-muted">
+          <span class="text-[15px]">{{ n }}</span>
+          <svg class="shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Locked"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </li>
+        {% endfor %}
+      </ul>
+      <p class="text-xs text-muted mt-1">Never shared: firm work product stays inside the firm. This is enforced on the server, not just hidden here.</p>
+    </div>
+
+    <form method="post" action="/m/{{ mid }}/share/{{ selected.pid }}/publish">
+      <button class="w-full rounded-[10px] bg-brand text-white font-bold py-3.5 text-base hover:bg-[#2A1DA8]">Approve &amp; create link</button>
+    </form>
+
+    <div>
+      {{ lbl("Links sent to this provider") }}
+      {% if selected.sent %}
+      <ul class="mt-1">
+        {% for s in selected.sent %}
+        <li class="py-3 border-b border-hair last:border-0" x-data="{ copied: false, url: location.origin + '/p/{{ s.token }}' }">
+          <div class="flex flex-wrap justify-between gap-x-3 text-sm">
+            <span class="text-ink font-medium">{{ s.approved_at | nice_date }} · approved by {{ s.approved_by }}</span>
+            <span class="text-muted">viewed {{ s.views }}×</span>
+          </div>
+          <div class="mt-1.5 flex items-center gap-2">
+            <input readonly :value="url" value="/p/{{ s.token }}" class="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs text-body" onfocus="this.select()">
+            <button type="button" @click="navigator.clipboard && navigator.clipboard.writeText(url).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
+              class="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand hover:bg-brandbg" x-text="copied ? 'Copied' : 'Copy'">Copy</button>
+            <a href="/p/{{ s.token }}" target="_blank" class="shrink-0 text-xs font-semibold text-brand hover:underline">Open</a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="mt-1 text-sm text-muted">No link has been created for this provider yet.</p>{% endif %}
+    </div>
+  </section>
+
+  {# RIGHT: live preview, the same partial the provider sees #}
+  <section class="rounded-card border border-line bg-white p-5 min-w-0">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      {{ lbl("Live preview · exactly what " ~ selected.p.party.name ~ " will see") }}
+      <a href="/m/{{ mid }}/share/{{ selected.pid }}/preview" target="_blank" class="text-sm font-semibold text-brand hover:underline">Open full preview →</a>
+    </div>
+    <div class="mt-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
+      {% set token = none %}
+      {% include "provider/_packet.html" %}
+    </div>
+  </section>
+  {% endif %}
 </main>
 {% endblock %}

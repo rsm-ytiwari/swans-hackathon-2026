@@ -1,24 +1,27 @@
 {% extends "base.html" %}
-{% import "components/ui.html" as ui %}
 {% block title %}{{ pkt.patient_name }} · case status{% endblock %}
 {% block body %}
-{# Provider-facing. Renders ONLY the packet (dict). Never import facts here. Owner: Jenith. #}
+{# Provider-facing. Renders ONLY the packet (dict). Never import facts here. #}
 {% if preview %}
-<div class="bg-amber-50 border-b border-amber-200 text-warn text-sm">
-  <div class="max-w-3xl mx-auto px-6 py-2 flex items-center justify-between gap-4">
-    <span>Preview: this is exactly what {{ pkt.provider_name }} will see.</span>
-    <form method="post" action="/m/{{ mid }}/share/{{ pid }}/publish">
-      <button class="rounded-lg bg-brand text-white px-3 py-1.5">Approve & create link</button>
-    </form>
+<div class="bg-warnbg border-b border-[#F2C98F] text-warn text-sm">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+    <span>Preview only: this is exactly what {{ pkt.provider_name }} will see.</span>
+    <span class="flex items-center gap-3">
+      <a href="/m/{{ mid }}/share?provider={{ pid }}" class="underline">← back to sharing</a>
+      <form method="post" action="/m/{{ mid }}/share/{{ pid }}/publish">
+        <button class="rounded-lg bg-brand text-white px-3 py-1.5 font-semibold">Approve &amp; create link</button>
+      </form>
+    </span>
   </div>
 </div>
 {% endif %}
-<main class="max-w-3xl mx-auto px-6 py-6 space-y-4">
-  <div>
-    <div class="text-xs text-muted">For {{ pkt.provider_name }}</div>
-    <h1 class="text-2xl font-semibold">{{ pkt.patient_name }}</h1>
+<header class="bg-white border-b border-line">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted">
+    <span>Shared with <strong class="text-ink">{{ pkt.provider_name }}</strong></span>
+    <span>Read-only · secure link</span>
   </div>
-
+</header>
+<main class="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-12">
   {% include "provider/_packet.html" %}
 </main>
 {% endblock %}
