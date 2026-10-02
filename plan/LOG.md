@@ -37,3 +37,4 @@ Use `D-—` when no decision drove it. Record attorney answers here as `Q-n answ
 - 11:16 · main · Shared core built: `app/core/{config,facts,sharing}.py`; provider bills sum $118,400 = Medical Specials field; firewall tests incl. all-sections-on; 24 tests pass · D-003, D-006
 - 11:16 · main · App shell + thin views: `/m/<id>` firm, `/m/<id>/share` console, preview, approve → `/p/<token>`, view receipts; provider doc fetch outside packet → 403 (curl-verified) · D-003, D-010
 - 11:18 · main · D-009, D-010 accepted; D-011 feature set proposed; `plan/tasks.md` created; CLAUDE.md ownership + stack updated; `.gitattributes` union-merges LOG.md · D-010
+- 11:20 · design agent · plan/ui-spec.md (180 lines) + prototype/{firm,provider}.html built from clio.db by prototype/build.py; new red flag found: SportsCare PT chart shows a discharge 09/14/2023 (p.12) vs 'never discharged' in the case file · D-011
