@@ -104,7 +104,7 @@ def sync():
 
 
 @app.get("/source/{clio_type}/{clio_id}")
-def source(request: Request, clio_type: str, clio_id: int):
+def source(request: Request, clio_type: str, clio_id: str):  # str: Clio custom-field-value ids look like "date-1702085618"
     """The record behind any fact on screen; rendered into the shared source dialog."""
     con = facts.connect()
     rec = facts.source_record(con, clio_type, clio_id)

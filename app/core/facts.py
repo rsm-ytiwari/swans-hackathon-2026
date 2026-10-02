@@ -379,7 +379,7 @@ def events_since(con, mid: int, since: date) -> list[Event]:
 
 # ---------- source lookup ----------
 
-def source_record(con, clio_type: str, clio_id: int) -> dict | None:
+def source_record(con, clio_type: str, clio_id: int | str) -> dict | None:
     """The stored record behind a Source, for the click-to-source view."""
     table = TABLE_BY_TYPE.get(clio_type)
     if not table:
