@@ -61,6 +61,8 @@ Hours saved still matter for burnout and turnover; just tie them to a lever.
 | Finch | Pre-litigation ops with human paralegals |
 | LlamaLab, ChartRequest | Records retrieval |
 | Many vendors | Intake voice agents |
+| Case Status, Hona ("Lia" agent, Sep 2026) | Client status portals and communication ⚠️ |
+| Lawmatics QualifyAI | Intake qualification |
 
 **Gaps:** operations and orchestration across many cases (open-loop tracking, actually sending the
 follow-ups, exception alerts), firm-owned automations inside the firm's own stack, and cents-per-case cost.

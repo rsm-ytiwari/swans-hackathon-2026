@@ -41,21 +41,23 @@ named dimension, or match it and be cheaper or faster to deploy.
 Apply the kill rules. A shape is out if any of these is true:
 - not buildable end-to-end in ~5 h by two people
 - not demo-able in 2 min
-- the rep didn't confirm the pain
+- the pain isn't evidenced in the brief or by the rep (if the rep is unavailable before 9:10, the brief is the evidence; re-check at 10:30)
 - it's a weaker copy of a funded incumbent (EvenUp/Eve/Supio…)
 
 Rank the survivors by gut, with a one-line reason each. Recommend one. **Stop.** Wait for confirmation.
 
 ## Step 5: Design (now read `capability-catalog.md`)
 - Type each to-be step: D/T/X/R/G/A/H/W/V, or **N = none fits** (describe it plainly).
+  **A design that is only D + A + N (no AI) is a complete, valid answer.** Never add an AI step to have
+  something uncertain to show; judges reward fit, not AI count.
 - Every non-D step: one sentence on why code alone isn't enough. If you can't write that sentence, it's D.
 - Pick tools from the catalog, or something better if it fits. The catalog is a reference, not a menu
   you must use. Mark what is **mocked** and every **human gate**.
 - Runtime model: start with the catalog's cheapest-good-enough default. `scripts/check_providers.py`
   only proves connectivity; the labeled eval set catches gross failures between providers. Don't burn
   time on fine model comparisons.
-- For each typed step, copy the relevant **pitfalls → fixes** from the catalog into `plan/tasks.md`
-  done-criteria, so the implementer handles them.
+- For each typed step, copy only the **pitfalls → fixes** that apply to data we actually have into
+  `plan/tasks.md` done-criteria. Don't add logic (e.g. SOL math) the data can't support.
 
 ## Step 6: Measurement + demo + pitch line
 - Baseline (manual minutes per unit), after (system + review time), accuracy on N = 6–15 labeled cases,

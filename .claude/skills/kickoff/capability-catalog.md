@@ -21,7 +21,7 @@
 | **X** | Extraction | records, bills, reports → fields | Sonnet 5.5 `messages.parse` or Gemini 3.8 Flash + schema, then a quote check | Mistral OCR 4.1 for scans (gives bounding boxes + confidence) |
 | **R** | Retrieval | past cases, playbooks, comparables | Long context (one case file fits in 1M tokens) | Gemini File Search (managed RAG with page citations); LanceDB hybrid |
 | **G** | Generation | draft letter, client update | Jinja/docxtpl template + an LLM for the narrative only | Opus 5.5 for final prose |
-| **A** | Act / integrate | update CRM, send, notify, fill a form | Direct API / mocked outbox; PyPDFForm; docxtpl | **n8n workflow** (Claude Code can build it via n8n-mcp) |
+| **A** | Act / integrate | update CRM, send, notify, fill a form | Direct API / mocked outbox; PyPDFForm; docxtpl | n8n workflow *if the deploy story needs it* (Claude Code can build it via n8n-mcp) |
 | **H** | Human gate | approve, review, exceptions | Where staff already work: Slack/n8n approval or a CRM task. Streamlit only as the demo surface | — |
 | **W** | Wait / external | records requests, adjuster replies, follow-ups | D timer + A follow-up + H escalation | — |
 | **V** | Voice / audio | calls, voicemail, intake line | Transcribe recordings: Gemini 3.5 Transcribe (free, speaker labels, Spanish) | Live: Gemini 3.8 Live (free) / Retell / Vapi |
@@ -111,6 +111,14 @@ Keep page metadata on every chunk, or citations break.
 - Banned-phrase list: "guarantee", "you will receive", any valuation. No legal advice to clients (UPL).
 - Streamlit reruns re-trigger generation. → Store the result in `session_state`; put generation behind a button.
 - Always G → H before anything leaves the firm.
+
+**Client communication (status updates, reminders, EN/ES):**
+- Fixed explanations go in **pre-written, attorney-approved templates per language**, not LLM translation.
+  The LLM rewrites only free-text internal notes into plain language.
+- Never leak to clients: policy limits, adjuster or negotiation details, valuation, strategy, or other
+  parties' info. Use a banned-term list + a regex check, and fall back to the template if a check fails.
+- Plain-language target (~6th–8th grade). Have a bilingual human review the Spanish samples for the eval.
+- SMS: honor STOP/opt-out keywords; TCPA consent; quiet hours. Route inbound replies to a human (no auto-replies about the case).
 
 ## A: Act / integrate
 | Target | Option | Pitfall |

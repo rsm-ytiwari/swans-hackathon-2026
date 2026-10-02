@@ -37,7 +37,8 @@ Swans' homepage says: "We don't build voice AI agents. We build automations…" 
 ## What wins here
 1. One narrow slice of the given problem, working end-to-end, on realistic messy synthetic data
 2. Measured before/after framed in contingency-fee terms (see `docs/domain.md` → money levers)
-3. Visible handling of uncertainty: confidence, source citations, a human review queue
+3. *If* the design uses AI: visible handling of uncertainty (confidence, source citations, human review).
+   A no-AI or mostly-code design is fine. Never add AI just to have uncertainty to show
 4. Output that lands where staff work (a CRM-shaped record, a task, a draft for approval)
 5. A one-sentence value line with a number, at the top of the submission
 6. A quote from the firm's rep ("I'd use this Monday") beats any chart
