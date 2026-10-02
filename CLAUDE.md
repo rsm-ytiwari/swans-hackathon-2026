@@ -49,6 +49,20 @@ Two-person team building a working AI automation for one real personal-injury (P
 - Local models are for the **app's runtime and data generation**, not for writing our code (too much
   quality loss for a 6-hour build).
 
+## Tools: MCP servers (`.mcp.json`) and skills
+| Tool | Use for | Don't use for |
+|---|---|---|
+| `context7` | Current library docs before writing SDK code (anthropic 1.x, pydantic-ai v2, streamlit 1.64, n8n). APIs changed in 2026; check before guessing | General questions |
+| `n8n-mcp` | Designing and validating n8n workflows (node docs and templates). Deploying needs `N8N_API_URL` + `N8N_API_KEY` from local n8n (`docker run -p 5678:5678 n8nio/n8n:2.41.5`) | Core AI logic (keep that in Python behind one HTTP endpoint) |
+| `playwright` | Clicking through the Streamlit demo end-to-end before the 12:00 and 2:30 checkpoints; README/submission screenshots | Scraping, or anything in the live demo itself |
+| `pdf` / `docx` skills | Filling or generating PDFs and Word letters | — |
+
+**Superpowers skills, time-boxed for a 6-hour build:**
+- `/kickoff` replaces `brainstorming`, and `plan/tasks.md` replaces `writing-plans`. Don't run those two.
+- Write tests first only for deterministic logic (dates, SOL, money math).
+- Use `systematic-debugging` when stuck after 2 tries.
+- Use `verification-before-completion` always.
+
 ## Stack (default unless /kickoff decides otherwise)
 Python 3.13 via `uv` · Streamlit UI · `scripts/check_providers.py` tests Ollama / Gemini / Anthropic ·
 keys in `.env` (see `.env.example`).
