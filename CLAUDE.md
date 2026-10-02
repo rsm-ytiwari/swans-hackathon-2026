@@ -1,0 +1,53 @@
+# Swans Applied AI Hackathon: team repo (Oct 2, 2026)
+
+Two-person team building a working AI automation for one real personal-injury (PI) law firm problem in
+~6 hours. Judges: the Swans CTO/engineers ("survives a real firm?") and PI firm executives ("would I pay?").
+
+## Read-before-acting map (read on demand, not all at once)
+| When | Read |
+|---|---|
+| Brief arrives, or re-scoping | Run `/kickoff` (it loads `brief/`, `docs/event.md`, `docs/domain.md`, then its catalog) |
+| Any question about judges, timeline, roles | `docs/event.md` |
+| Any PI domain term, money lever, competitor | `docs/domain.md` |
+| Choosing a tool or model for a step | `.claude/skills/kickoff/capability-catalog.md` |
+| Before writing code | `plan/decision.md` + `plan/tasks.md` (if they don't exist, run `/kickoff` first) |
+| 3:00pm, or packaging | Run `/submit` |
+
+**Never propose a solution before reading the brief and `plan/decision.md`.**
+
+## Hard rules
+1. **Committed decision:** `plan/decision.md` is the contract. Don't expand scope beyond it. Propose cuts,
+   not additions. Changes need a human "yes."
+2. **No invented facts:** every number not from the brief, the reps, or our eval is labeled `ASSUMED`.
+   Never fabricate metrics, quotes, or test results.
+3. **Ladder:** deterministic code before AI. A step uses an LLM only if you can say in one sentence why
+   code can't do it. Dates, deadlines and money math are always code.
+4. **Verify, don't claim:** "done" means you ran it and saw it work. Show the command and its output.
+5. **Demo safety:** every LLM call goes through one provider wrapper, caches to `app/cache/`, and the app
+   has a replay mode that works with wifi off.
+6. **Human gate:** nothing leaves the firm (email/SMS/letter) without an approval step. Synthetic data only;
+   never commit `.env` or anything resembling real PHI.
+7. **Ownership:** Yash owns `app/`, `plan/`. Partner owns `data/`, `eval/`, `pitch/`. Don't edit the
+   other person's folders; ask instead. Commit small, pull often.
+8. **Time:** check `date` at the start of each task and warn if we're past a checkpoint in
+   `docs/event.md` (9:10 commit · 12:00 end-to-end · 2:30 freeze · 3:00 submit block · 3:45 submit).
+
+## Thinking and delegation routing
+| Work | Who | Model / effort |
+|---|---|---|
+| Kickoff, design, re-scoping, debugging after 2 failed tries | Main session (plan mode for big changes) | Opus · high/xhigh (`/effort`) |
+| Well-specified coding task in owned files | `implementer` subagent | Sonnet · medium |
+| Codebase or doc lookups | Built-in `Explore` subagent | — |
+| 12:00 and 2:30 demo-readiness review | `reviewer` subagent | Opus · high |
+| Self-contained module, separate files, clear interface | Codex: `codex exec -s workspace-write -o plan/codex-<task>.md "<task + files + done-criteria>"` | Codex default |
+| Bulk synthetic data, app runtime experiments | Local Ollama `gemma4:26b` / free Gemini | free |
+
+- Max **3 parallel subagents**.
+- Each delegation states: goal, files it may touch, done-criteria, and the verification command.
+- Read subagent and Codex results critically and re-run their verification yourself.
+- Local models are for the **app's runtime and data generation**, not for writing our code (too much
+  quality loss for a 6-hour build).
+
+## Stack (default unless /kickoff decides otherwise)
+Python 3.13 via `uv` · Streamlit UI · `scripts/check_providers.py` tests Ollama / Gemini / Anthropic ·
+keys in `.env` (see `.env.example`).
