@@ -159,7 +159,7 @@ def _mentions(party_name: str, kind: str, text: str) -> bool:
 # ---------- matter + fields ----------
 
 def matters(con) -> list[sqlite3.Row]:
-    return _rows(con, "SELECT clio_id, display_number, client_name, stage_name FROM matters ORDER BY clio_id")
+    return _rows(con, "SELECT clio_id, display_number, client_name, stage_name, description, open_date FROM matters ORDER BY clio_id")
 
 
 def matter(con, mid: int) -> sqlite3.Row:
