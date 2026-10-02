@@ -11,7 +11,7 @@
 {# One document row: clean label, pages, received date. Never the raw filename. #}
 {% macro doc_row(d, token) %}
 {% set href = ('/p/' ~ token ~ '/files/' ~ d.doc_id) if token else ('/files/' ~ d.doc_id) %}
-<li class="flex items-center justify-between gap-3 py-3 border-b border-hair last:border-0">
+<li class="flex items-center justify-between gap-3 py-3 border-b border-hair last:border-0 last:pb-0">
   <div class="min-w-0">
     <div class="text-[15px] font-semibold text-ink">{{ d.name | doc_title }}{% if d.pages %} · {{ d.pages }} {{ 'page' if d.pages == 1 else 'pages' }}{% endif %}</div>
     {% if d.received %}<div class="text-[13px] text-muted">received {{ d.received | nice_date }}</div>{% endif %}
@@ -31,18 +31,18 @@
   {% if pkt.status %}
   <section class="rounded-card border border-[#A9D5CB] bg-tealbg/50 p-5 sm:p-6">
     {{ lbl("Is the case still active?") }}
-    <p class="mt-2 text-[21px] sm:text-[24px] font-extrabold text-teal leading-snug">{{ pkt.status.plain }}</p>
+    <p class="mt-2 text-[21px] sm:text-[24px] font-extrabold text-teal leading-snug" style="text-wrap:balance">{{ pkt.status.plain }}</p>
     {% set stages = pkt.status.stages %}{% set cur = pkt.status.index %}
     {% if stages %}
     <ol class="mt-5 flex gap-1" aria-label="Case stages">
       {% for s in stages %}
       <li class="flex-1 min-w-0">
         <div class="h-2 rounded {{ 'bg-teal' if cur is not none and loop.index0 <= cur else 'bg-[#D3DCDA]' }}"></div>
-        <div class="hidden min-[500px]:block mt-1.5 text-[12px] leading-tight pr-0.5 {{ 'text-ink font-bold' if loop.index0 == cur else 'text-muted' }}" style="hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word" lang="en">{{ s }}</div>
+        <div class="hidden {{ '' if compact else 'min-[500px]:block' }} mt-1.5 text-[12px] leading-tight pr-0.5 {{ 'text-ink font-bold' if loop.index0 == cur else 'text-muted' }}" style="hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word" lang="en">{{ s }}</div>
       </li>
       {% endfor %}
     </ol>
-    <div class="min-[500px]:hidden mt-1.5 flex justify-between gap-2 text-[12px] text-muted">
+    <div class="{{ '' if compact else 'min-[500px]:hidden' }} mt-1.5 flex justify-between gap-2 text-[12px] text-muted">
       <span>{{ stages[0] }}</span>
       {% if cur is not none and 0 < cur < stages|length - 1 %}<span class="text-ink font-bold text-center">{{ stages[cur] }}</span>{% endif %}
       <span class="text-right {{ 'text-ink font-bold' if cur == stages|length - 1 }}">{{ stages[-1] }}</span>
@@ -58,7 +58,7 @@
     {% if pkt.requests %}
     <ul class="mt-2">
       {% for q in pkt.requests %}
-      <li class="flex flex-wrap items-center justify-between gap-2 py-3 border-b border-hair last:border-0">
+      <li class="flex flex-wrap items-center justify-between gap-2 py-3 border-b border-hair last:border-0 last:pb-0">
         <span class="text-[15px] font-semibold text-ink">{{ q.what | request_text }}</span>
         {% if q.due %}
           {% if q.days_from_today is not none and q.days_from_today < 0 %}
@@ -113,5 +113,5 @@
     <ul class="mt-2">{% for d in pkt.shared_documents %}{{ doc_row(d, token) }}{% endfor %}</ul></section>
   {% else %}{{ placeholder("shared_documents") }}{% endif %}
 
-  <p class="pt-2 text-[13px] text-muted text-center">Shared with you by the law firm representing {{ pkt.patient_name }}. This page shows only what the attorney approved for your office.</p>
+  <p class="pt-2 text-[13px] text-muted text-center" style="text-wrap:balance">Shared with you by the law firm representing {{ pkt.patient_name }}. This page shows only what the attorney approved for your office.</p>
 </div>

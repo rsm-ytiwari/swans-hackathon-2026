@@ -117,7 +117,7 @@ def _since_tiles(changes) -> list[dict]:
             latest = max(items, key=lambda e: e.when)
             tiles.append({"n": len(items), "label": label if len(items) != 1 else label.rstrip("s"),
                           "latest": latest})
-    return tiles[:3]
+    return tiles[:4]
 
 
 def _provider_rows(con, mid: int, t: date) -> list[dict]:

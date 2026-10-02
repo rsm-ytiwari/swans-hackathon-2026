@@ -40,7 +40,8 @@
       <div class="text-[13px] text-muted truncate">
         {{- r.p.billed_total | money if r.p.billed_total else "no charges" }}
         {%- if r.p.requests %} · <span class="text-warn font-semibold">{{ r.p.requests | length }} open {{ 'request' if r.p.requests|length == 1 else 'requests' }}</span>{% endif %}
-        · {% if r.last_sent %}<span class="text-ok font-semibold">Shared {{ r.last_sent | mdate }} · viewed {{ r.views }}×</span>{% else %}Not shared{% endif %}</div>
+      </div>
+      <div class="text-[13px] truncate">{% if r.last_sent %}<span class="text-ok font-semibold">Shared {{ r.last_sent | mdate }} · {{ "opened" if r.views else "not opened" }}</span>{% else %}<span class="text-muted">Not shared</span>{% endif %}</div>
     </a>
     {% else %}
     <p class="px-4 pb-4 text-sm text-muted">No treating providers on this matter yet.</p>
@@ -105,13 +106,13 @@
         <li class="py-3 border-b border-hair last:border-0" x-data="{ copied: false, url: location.origin + '/p/{{ s.token }}' }">
           <div class="flex flex-wrap justify-between gap-x-3 text-sm">
             <span class="text-ink font-medium">{{ s.approved_at | nice_date }} · approved by {{ s.approved_by }}</span>
-            <span class="text-muted">viewed {{ s.views }}×</span>
+            <span class="{{ 'text-ok font-semibold' if s.views else 'text-muted' }}">{{ ("opened " ~ s.views ~ "×") if s.views else "not opened yet" }}</span>
           </div>
           <div class="mt-1.5 flex items-center gap-2">
             <input readonly :value="url" value="/p/{{ s.token }}" class="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs text-body" onfocus="this.select()">
             <button type="button" @click="navigator.clipboard && navigator.clipboard.writeText(url).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
               class="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand hover:bg-brandbg" x-text="copied ? 'Copied' : 'Copy'">Copy</button>
-            <a href="/p/{{ s.token }}" target="_blank" class="shrink-0 text-xs font-semibold text-brand hover:underline">Open</a>
+            <a href="/p/{{ s.token }}" target="_blank" class="shrink-0 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-brand hover:bg-brandbg hover:no-underline">Open</a>
           </div>
         </li>
         {% endfor %}
@@ -127,7 +128,7 @@
       <a href="/m/{{ mid }}/share/{{ selected.pid }}/preview" target="_blank" class="text-sm font-semibold text-brand hover:underline">Open full preview →</a>
     </div>
     <div class="mt-3 rounded-xl border border-line bg-surface p-4 sm:p-5">
-      {% set token = none %}
+      {% set token = none %}{% set compact = true %}
       {% include "provider/_packet.html" %}
     </div>
   </section>
