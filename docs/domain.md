@@ -7,8 +7,14 @@
 3. **Investigation:** police report, photos, witnesses; letters of representation (LOR) to insurers; claims opened.
 4. **Treatment monitoring:** ER → primary care → PT/chiro → imaging → specialist, until MMI. The case
    manager watches for **treatment gaps**: adjuster software (Colossus) cuts value for gaps.
-5. **Records & bills:** request records + itemized bills from ~6–8 providers per case. HIPAA allows 30 days;
-   reality is 45–90. Staff chase incomplete productions. A request older than 30 days is a red flag.
+5. **Records & bills:** request records + itemized bills from ~6–8 providers per case.
+   - **California:** an attorney holding a signed authorization must be given records within **5 days**,
+     with costs for non-compliance (CA Evid Code §1158).
+   - HIPAA's 30 days is the *patient's own* right of access, and *Ciox v. Azar* (2020) narrowed the
+     third-party directive.
+   - Reality: often 45–90 days. Staff chase incomplete productions.
+   - Treat a request older than 30 days as a red flag, and anything past the CA 5-day deadline as leverage
+     for a follow-up letter.
 6. **Demand package:** medical chronology + specials total + pain-and-suffering narrative + demand, sent to the adjuster.
 7. **Negotiation** with the adjuster.
 8. **Litigation**, if it doesn't settle; must be filed before the SOL (CA: 2 years).

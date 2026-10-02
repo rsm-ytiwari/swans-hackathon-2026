@@ -14,6 +14,7 @@ dependencies = [
     "pymupdf",
     "jinja2",
     "pytest",
+    "requests>=2.34.2",
 ]
 
 [dependency-groups]

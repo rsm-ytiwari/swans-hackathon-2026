@@ -51,7 +51,11 @@ Rank the survivors by gut, with a one-line reason each. Recommend one. **Stop.**
 - Every non-D step: one sentence on why code alone isn't enough. If you can't write that sentence, it's D.
 - Pick tools from the catalog, or something better if it fits. The catalog is a reference, not a menu
   you must use. Mark what is **mocked** and every **human gate**.
-- Runtime model: decided by the bake-off (`scripts/check_providers.py` + eval), not by preference.
+- Runtime model: start with the catalog's cheapest-good-enough default. `scripts/check_providers.py`
+  only proves connectivity; the labeled eval set catches gross failures between providers. Don't burn
+  time on fine model comparisons.
+- For each typed step, copy the relevant **pitfalls → fixes** from the catalog into `plan/tasks.md`
+  done-criteria, so the implementer handles them.
 
 ## Step 6: Measurement + demo + pitch line
 - Baseline (manual minutes per unit), after (system + review time), accuracy on N = 6–15 labeled cases,

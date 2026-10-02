@@ -1,219 +1,219 @@
-# Capability Catalog: node type → tool (researched Oct 1, 2026)
+# Capability Catalog: step type → options, pitfalls, fixes (researched Oct 1, 2026)
 
-**How to use:** read this only AFTER the solution shape is chosen (/kickoff Step 5). Give each to-be step
-one node type, or **N (none fits)**, then consider the tool in its row. This is a reference, not a menu:
-if the problem has no triage step, don't add Jev. If something better fits, use it.
-
-**Default rule: climb the ladder only as far as you need to.**
-deterministic code → cheap model → strong model → agent loop. Each rung up costs more, adds latency and
-adds failure modes, so you have to be able to justify the climb in one sentence.
-
-Verification status: ✅ = checked on a primary source (official docs / pricing / GitHub) · ⚠️ = secondary
-source or unconfirmed. Prices are USD per 1M tokens (input/output) unless noted.
+## Read this first (anti-anchoring)
+- Read this only AFTER a solution shape is chosen (/kickoff Step 5). It is a **reference, not a menu**.
+  If something better fits, use it. If no type fits, use **N**.
+- Section depth ≠ priority. X and T are long because they have more pitfalls, not because the answer
+  should be document AI. Briefs about reporting, dashboards or workflow often need **N + D + A** and no AI at all.
+- **Climb the ladder only as far as needed:** code → cheap model → strong model → agent loop.
+  Each rung must be justified in one sentence.
+- Claims about what judges "will value" are **guesses**, not design rules.
+- ✅ = checked on a primary source · ⚠️ = secondary or unconfirmed.
+- Prices are USD per 1M tokens (input/output). Re-check anything that matters in the morning; this space moves weekly.
 
 ---
 
-## Node types at a glance
-
-| Code | Node type | Signal words in the brief | Default tool | Cost / run |
+## At a glance
+| Code | Step type | Signal in brief | Default (cheapest that's good enough) | Upgrade / alternative |
 |---|---|---|---|---|
-| **D** | Deterministic compute | dates, deadlines, SOL, totals, thresholds, dedupe, "within X days" | Python (dateutil, pandas, rapidfuzz) | $0 |
-| **T** | Fuzzy triage / decision | qualify, route, prioritize, "is this…", urgent?, category | Jev / Clef-flash → cheap LLM with logprobs | ~$0.00001 |
-| **X** | Extraction from documents | records, bills, police report, "pull out", summarize into fields | Gemini Flash / Claude Sonnet + Pydantic schema + quote check | ~$0.001–0.01 / page |
-| **R** | Retrieval across a corpus | "past cases", "firm knowledge", "comparable settlements", playbook | Long-context first; RAG only across many matters | ~$0–0.01 |
-| **G** | Generation of text | draft, letter, client update, demand, email | Jinja template for the fixed parts + Sonnet/Opus for prose | ~$0.01–0.05 |
-| **A** | Act / integrate | update CRM, send SMS/email, schedule, notify | Direct API / webhook; n8n to show; mock legal CMSs | $0 (trial tiers) |
-| **H** | Human gate | approve, review, sign off, exceptions | Streamlit queue (approve / reject / edit) | staff time |
-| **W** | Wait / external dependency | "waiting on provider", follow-up, chase, adjuster response | D timer + A follow-up + H escalation | $0 |
-| **V** | Voice / conversation | calls, after-hours, intake line | Only if the problem is calls: Retell / Vapi; else faster-whisper on recordings | $0.07–0.31/min |
-| **O** | Orchestration | (always present) | Plain Python workflow; agent loop only if the number of steps is unpredictable | — |
-| **E** | Evaluation | (always present) | Gold-label CSV + pytest + confusion matrix in Streamlit | $0 |
-| **N** | None fits | dashboard of stalled cases, form/checklist redesign, CRM config, status page, delete the step | Describe it plainly; often Streamlit/Airtable/n8n with no AI at all | $0 |
+| **D** | Deterministic | dates, deadlines, SOL, totals, thresholds, dedupe | Python | — |
+| **T** | Triage / decision | qualify, route, urgent?, which type | Rules if possible → Gemini 3.8 Flash (free) or Haiku 4.5 with an enum + "other/unsure" | GPT-6 Luna with logprobs; Jev/Clef as a *swappable option* |
+| **X** | Extraction | records, bills, reports → fields | Sonnet 5.5 `messages.parse` or Gemini 3.8 Flash + schema, then a quote check | Mistral OCR 4.1 for scans (gives bounding boxes + confidence) |
+| **R** | Retrieval | past cases, playbooks, comparables | Long context (one case file fits in 1M tokens) | Gemini File Search (managed RAG with page citations); LanceDB hybrid |
+| **G** | Generation | draft letter, client update | Jinja/docxtpl template + an LLM for the narrative only | Opus 5.5 for final prose |
+| **A** | Act / integrate | update CRM, send, notify, fill a form | Direct API / mocked outbox; PyPDFForm; docxtpl | **n8n workflow** (Claude Code can build it via n8n-mcp) |
+| **H** | Human gate | approve, review, exceptions | Where staff already work: Slack/n8n approval or a CRM task. Streamlit only as the demo surface | — |
+| **W** | Wait / external | records requests, adjuster replies, follow-ups | D timer + A follow-up + H escalation | — |
+| **V** | Voice / audio | calls, voicemail, intake line | Transcribe recordings: Gemini 3.5 Transcribe (free, speaker labels, Spanish) | Live: Gemini 3.8 Live (free) / Retell / Vapi |
+| **O** | Orchestration | always | Plain Python workflow | n8n; agent loop only if the number of steps is unpredictable |
+| **E** | Evaluation | always | Hand-labeled CSV + pytest; report counts ("13/15") | — |
+| **N** | None fits | dashboard, form/checklist redesign, CRM config, status page, delete the step | Streamlit + DuckDB/pandas + Altair; Airtable; n8n; no AI | — |
 
 ---
 
-## D: Deterministic compute
-**Use for:** anything with a parser, a formula or a lookup table. That covers SOL dates, days since the last
-treatment (treatment gap), sums of bill line items, "records request > 30 days old", deduplicating
-provider names, lien arithmetic and settlement disbursement math.
+## D: Deterministic
+**Tools:** `python-dateutil`, `dateparser`, `holidays`, `zoneinfo`, `decimal`, `pandas`, `rapidfuzz`,
+NLM ICD-10-CM API (free) ✅, NPI Registry API (free).
+**CPT descriptions need an AMA license** ✅: extract the printed codes only.
 
-| Need | Tool |
-|---|---|
-| Parse and compare dates | `python-dateutil`, `dateparser` |
-| Fuzzy-match provider names | `rapidfuzz` |
-| Tables and sums | `pandas` |
-| Statute of limitations | A cited table (Justia 50-state survey). Flag exceptions: med-mal, government-entity notice, minors |
-| Codes | NLM Clinical Tables ICD-10-CM API (free, no key) ✅; RxNorm `/approximateTerm` ✅. **CPT descriptions need an AMA license** ✅. Extract printed codes only |
+**Pitfalls → fixes**
+- **Leap day:** `relativedelta(years=2)` from Feb 29 → Feb 28.
+  **Weekends/holidays:** deadlines roll forward (CA CCP §12a). → Use `holidays` + a court-holiday list; show the rule beside the date.
+- **Timezone:** UTC hosts flip the date after 5pm PT. → Store `date`s; use `ZoneInfo("America/Los_Angeles")`.
+- **Ambiguous dates** (03/04/25, "March 2024"). → `dateparser` with `DATE_ORDER='MDY'`; flag ambiguous or partial dates for H.
+- **SOL exceptions:** minors (CCP 352), government claims (6 months, Gov Code 911.2), discovery rule.
+  → Output "attorney review", never a confident date.
+- **Fuzzy over-merges** ("St. Joseph Orange" vs "St. Joseph Burbank"). → Block on city or NPI before rapidfuzz.
+- **Money in floats.** → Use `Decimal`.
+- **Records deadlines in CA:** an attorney with an authorization must get records within **5 days**
+  (Evid Code §1158) ✅. HIPAA's 30 days is the patient's own right.
 
-**Why this matters for the pitch:** Jev's own docs say it is unreliable at dates and arithmetic
-("extract components; compare in code") ✅, and LLMs are too. Saying "dates are computed in code because
-deadlines must be exact" is a sentence that wins over the CTO.
+## T: Triage / decision
+**Default:** rules first. Then an enum classification with an explicit `other_or_unsure` label on a cheap model.
 
-## T: Fuzzy triage / decision (typed answer + confidence)
-**Use for:** a judgment on short unstructured text that returns yes/no, one of N options, or a score.
-Examples: is this lead qualified, which document type is this page, is this client message urgent, does it
-mention a new injury, who should handle it.
-
-| Option | Cost | Latency | Confidence | Setup | Gotchas | Status |
-|---|---|---|---|---|---|---|
-| **Jev** (TypeSafe) `pip install typesafe-sdk` | $0.042 in / output free | ~0.1–0.5 s | Native probabilities. Good in-distribution; ECE 0.107 out of distribution in an independent test (choice overconfident, yes/no underconfident) | 10 min with a key | **Signup / credit status unclear** (paused Sep 22, reportedly reopened without the $5 credit ⚠️). Weak on dates, arithmetic, multi-hop and injection. English only. 64k context | Docs ✅ |
-| **Jev via Cloudflare Workers AI** (`typesafe/jev`) | same, zero data retention | same | same | 15 min | Fallback if direct signup is blocked | ✅ |
-| **Cloudflare Clef-flash / Clef** (`@cf/cloudflare/clef-flash`) | $0.09 / $0.24; free tier ≈1.2M tokens/day | 39 / 209 ms (vendor numbers) | Brier-trained; **not independently tested** (launched Oct 1) | 15 min | Same request shape as Jev. Accepts images. Apache-2.0 weights, but local use needs a big GPU | ✅ |
-| **Laya** `pip install laya` (421M, local) | free | ~33 ms | Calibration claimed, unverified | 10 min | Single maintainer; shaky beyond ~4k tokens | ✅ repo |
-| GLiClass / ModernBERT-zeroshot / DeBERTa-zeroshot | free, CPU | 10–100 ms | **Uncalibrated** | 15 min | Labels must be phrased as hypotheses | ✅ |
-| SetFit (8–16 labels per class) | free | ms | OK once calibrated | 30–60 min | Needs labeled examples | ✅ |
-| GPT-6 Luna / gpt-4.1-nano **with logprobs** | ~$0.10 in | 0.5–1.5 s | Good: softmax over a single-token enum | 20 min | Logprobs only when `reasoning_effort: "none"` | ✅ |
-| Claude Haiku 4.5 / Gemini Flash-Lite + structured output | $1 / $0.25 in | ~1 s | **No logprobs on Claude.** Use a 5-sample vote, never self-reported confidence (models are overconfident: Xiong et al., ICLR 2024) | 15 min | — | ✅ |
-| Ollama local (qwen3.5:9b, gemma4:12b) + JSON schema | free | 0.2–2 s | Logprobs available | 30 min | Quality depends on model size | ✅ |
-
-**Demo default (post-review):** keep the triage step **swappable** behind one function. Put Jev in the
-live demo only if the key works AND it scores ≥ Haiku/Gemini on your labeled cases. Otherwise mention it
-as a swappable option ("plugs into decision models like Jev or Clef"). Clef launched Oct 1, so never make
-it the default.
-
-**Rule:** rules first, then Jev or Clef for many fast typed questions on short English text, then an
-open-source classifier when data must stay on the machine, then a cheap LLM when the judgment needs reading
-comprehension, long input or a rationale. **Always gate on confidence and send low-confidence items to H.**
-Hold out ~20 labels to check calibration.
-
-**Pitch line:** "Triage returns a probability; anything under 0.8 goes to a case manager. The escalation
-path is the feature."
-
-## X: Extraction from documents (fields + source)
-**Use for:** medical records, itemized bills (UB-04 / CMS-1500), police reports, insurer letters, intake forms.
-
-| Step | Default | Cheap / free | Local / open-source |
+| Option | Cost | Confidence | Notes |
 |---|---|---|---|
-| Has a text layer? | PyMuPDF check | — | — |
-| Scan → text | Mistral OCR ($4 / 1k pages; $10/mo free credit) ✅ | Textract text $1.50 / 1k | **Docling + ocrmac** (Mac native, ~0.2 s/page OCR, ~1.3 s/page full pipeline on M3) ✅ |
-| Fields → JSON | **Claude Sonnet 5.5 `messages.parse(output_format=Model)`** ✅ (≈$0.006–0.01/page) | **Gemini 3.5 Flash-Lite + response schema** (<$0.001/page; free tier trains on your data, so synthetic only) ✅ | Instructor + Ollama |
-| Source grounding | Claude **Citations** (page ranges + `cited_text`) ✅ | **LangExtract** (character offsets + HTML highlight view; works with Gemini, OpenAI or Ollama) ✅ | LangExtract + Ollama |
+| Gemini 3.8 Flash (free tier) ✅ | free / $0.75 in paid | No native probabilities; use a 5-sample vote | Free tier may train on inputs → synthetic only |
+| Claude Haiku 4.5 ✅ | $1/$5 | **No logprobs.** Use a 5-sample vote | Never trust self-reported "confidence: 0.9" (overconfident, Xiong et al. ICLR 2024) |
+| GPT-6 Luna ✅ | $0.10/$0.50 | **Logprobs** when `reasoning_effort: "none"` → softmax over a single-token enum | Best cheap calibrated option |
+| Ollama local (gemma4:26b) ✅ | free | Logprobs **only via native `/api/chat`** (`/v1` drops them) ✅ | Set `num_ctx` (default 4096 silently truncates) ✅ |
+| Jev (TypeSafe) `typesafe-sdk` ✅ / via Cloudflare Workers AI ✅ | $0.042 in | Native probabilities; ECE 0.107 out of distribution (independent test) | Signup unclear ⚠️; English only; weak on dates, math, injection; 64k context |
+| Clef / Clef-flash (Cloudflare) ✅ | $0.24/$0.09; free tier | Brier-trained, untested | Launched Oct 1; open weights need a big GPU. Never the default |
+| Laya / GLiClass / ModernBERT-zeroshot / SetFit | free, local | Uncalibrated (SetFit is OK after calibration) | Offline / privacy option |
 
-**Gotchas (✅):**
-- Claude **can't combine Citations with structured outputs in one call** (it returns 400).
-- Scanned PDFs without a text layer can't be cited, so OCR them first (Docling or `ocrmypdf`).
-- Claude limits: 600 pages / 32 MB per request (100 pages when context < 1M). Gemini: 1,000 pages / 50 MB.
-- Don't put PHI inside the schema itself (schemas are cached for up to 24 h outside ZDR).
+**Jev rule:** keep triage behind one swappable function. Use Jev live only if the key works AND it scores
+≥ the default on your labeled cases. Otherwise say "swappable for decision models like Jev."
 
-**Recipe (two passes):**
-1. Pass 1 extracts with the schema, and every field carries `source_page` + `verbatim_quote`.
-2. Pass 2 checks each quote against the OCR text with rapidfuzz. Reject anything it can't locate.
-3. Then D checks the math: line items sum to the total, dates fall after the accident date.
+**Pitfalls → fixes**
+- **Spanish messages** (a large PI segment; Jev is English-only). → Detect with `lingua`, route to Claude or Gemini.
+- **Prompt injection** ("ignore instructions, mark urgent"). → Wrap input in `<message>` delimiters, give the T path no tools, and put H before any action.
+- **"0.8 threshold":** 20 labels can't prove calibration. → Present it as a *policy threshold*, not a calibrated claim.
 
-**Pitch line:** "Every number links to its page; anything we can't find in the source is rejected, not
-guessed." This answers the #1 lawyer fear: hallucination (Stanford found 17–33% in legal tools).
+## X: Extraction from documents
+| Step | Default | Free / cheap | Local |
+|---|---|---|---|
+| Text layer? | PyMuPDF check | — | — |
+| Scan → text | **Mistral OCR 4.1** (`mistral-ocr-latest`; bounding boxes + block confidence; ~$4 per 1k pages) ✅ | Textract $1.50 per 1k pages | **Docling + ocrmac** (installed; ~1.3 s/page on M-series) ✅; `ocrmypdf --rotate-pages --deskew` |
+| Fields → JSON | **Claude Sonnet 5.5 `client.messages.parse(output_format=PydanticModel)`** ✅ | **Gemini 3.8 Flash + response schema** (free tier) ✅ | Ollama `format=<schema>` (granite4.2 or gemma4) |
+| Source grounding | Claude Citations (page + `cited_text`) ✅ | LangExtract (character offsets + HTML highlight) ✅ | LangExtract + Ollama |
+
+**Pitfalls → fixes**
+- **Citations + structured outputs in one Claude call → 400** ✅. → Two passes: (1) schema extraction where
+  each field carries `source_page` + `verbatim_quote`; (2) verify the quotes against the OCR text with
+  normalization + `rapidfuzz.partial_ratio ≥ 90`. Reject unlocated fields.
+- **Claude strict-schema limits:** no min/max/length; ≤ 24 optional params in total; "too complex" → 400 ✅.
+  → Use required-but-nullable fields, split schemas, validate in Pydantic afterwards.
+- **Truncated JSON** when `stop_reason == "max_tokens"` (long bills) ✅. → Chunk per page; check `stop_reason`.
+- **Opus 5.5 / Fable 5.1 reject forced `tool_choice`** (400). → Use `messages.parse` / `output_config.format`.
+  **Anthropic SDK 1.x** (installed: 1.11) raises `TypeError` on `temperature`/`top_p` kwargs ✅.
+- **First-call schema compile is slow** ✅. → Warm up before the demo.
+- **Ollama 4096-token default context truncates silently** ✅. → `options.num_ctx=32768` on native `/api/chat`.
+- **Another patient's pages in the file.** → Extract name + DOB per page; quarantine mismatches. This doubles as a HIPAA-safety talking point.
+- **Handwriting:** the quote check can't verify it. → Mark "unverified" and send to H.
+- **Tables across pages.** → Merge, then re-check the sums in D.
+- **Hallucination stat** (Stanford 17–33%) was measured on *legal research tools*, not extraction. Say so if you cite it.
 
 ## R: Retrieval
 | Situation | Do |
 |---|---|
-| One client's case file (< ~500K tokens) | **No RAG.** Put it all in Sonnet 5.5 or Opus 5.5 (1M context ✅) with prompt caching |
-| Firm-wide corpus: past settlements, playbooks, FAQs, many matters | **Hybrid RAG** (BM25 + vectors; legal text is full of exact codes and numbers). LanceDB (built-in hybrid + RRF) or Chroma; embeddings Qwen3-Embedding-0.6B or EmbeddingGemma-308M; reranker only if the top 5 look wrong |
-| Settlement comparables (demo data) | SetCalc API (~4.1K PI verdicts, CC-BY, no auth) ⚠️; CourtListener API (low free limits) |
+| One case file (< ~500K tokens) | **No RAG.** Long context with prompt caching (1-hour TTL so it survives demo pauses; warm it up first) |
+| Cross-matter corpus (playbooks, past settlements, FAQs) | **Gemini File Search** (managed, page citations, 1 GB free ⚠️), or LanceDB hybrid BM25 + vectors with Qwen3-Embedding-0.6B; rerank with Voyage rerank-3-lite (first 200M tokens free) ✅ |
+| Case law / dockets | **CourtListener** (free API, MCP available inside Claude) ✅; thin coverage of CA trial courts |
+| Settlement comparables | SetCalc API ⚠️ (illustrative only; never present it as a case valuation) |
 
-**Pitch line:** "We didn't build RAG for a single case file, because it fits in context. RAG is only for
-the cross-case knowledge base." The CTO will respect the restraint.
+Keep page metadata on every chunk, or citations break.
 
 ## G: Generation
-- Put fixed legal boilerplate in **Jinja templates** (deterministic, approved by an attorney). The LLM fills
-  only the narrative parts.
-- Models: Sonnet 5.5 ($2 / $10) by default; Opus 5.5 ($4 / $20; always uses thinking, so set
-  `effort: "low"`) for the final client-facing prose.
-- **Always follow G with H** before anything leaves the firm (ABA Formal Op. 512; Rule 1.4 communication;
-  no legal advice from client-facing bots, to avoid unauthorized practice of law).
+- Fixed legal text goes in templates: **docxtpl** (.docx staff can edit in Word; watch for Word splitting
+  Jinja tags across runs) and Jinja with `StrictUndefined`. The LLM writes only the narrative.
+- Generate only from **validated JSON**. Then regex-check every number and date in the draft against that JSON.
+- Banned-phrase list: "guarantee", "you will receive", any valuation. No legal advice to clients (UPL).
+- Streamlit reruns re-trigger generation. → Store the result in `session_state`; put generation behind a button.
+- Always G → H before anything leaves the firm.
 
 ## A: Act / integrate
-| Target | Use | Status |
+| Target | Option | Pitfall |
 |---|---|---|
-| Clio / Filevine / Lawmatics | **Mock behind a thin adapter.** None has a vendor-official MCP server (community only), and sandbox access is uncertain. Pitch: "swaps to Clio's v4 API" | ✅ |
-| HubSpot / Slack / Google Workspace / DocuSign / Airtable | Official remote MCP servers exist. Use one only for a "Claude acts inside your tool" moment | ✅ (HubSpot GA date ⚠️) |
-| SMS | Twilio trial: verified numbers only (up to 5), 100 SMS, "Sent from a Twilio Trial account" prefix | ✅ |
-| Email | Resend free (3,000/mo, 100/day). SendGrid's free plan is gone | ✅ |
-| Orchestration visual | **n8n** (cloud 14-day trial or `docker run n8nio/n8n`): webhook → your Python service → CRM / SMS nodes. Swans builds on n8n/Make/Zapier, so this reads as "deployable tomorrow" | ✅ |
+| **n8n** (Swans' stack) | Self-host `n8nio/n8n:2.41.5` (pin it; 2.42 is pre-release). Claude Code builds and validates workflows via **n8n-mcp** (`npx n8n-mcp`, docs for 2.9k nodes) ✅ + n8n's native MCP server ✅. Built-in **human-approval (Send-and-Wait) via Slack/Telegram** ✅ | Cloud can't reach a localhost webhook → tunnel (cloudflared/ngrok). Test vs prod webhook URLs differ. n8n Assistant / Agent Builder are preview → don't depend on them |
+| Clio / Filevine / Lawmatics | **Mock with JSON fixtures** behind an adapter. No official MCP servers; Filevine's API is partner-gated ✅ | Pitch: "swaps to Clio's v4 API" |
+| PDF forms (HIPAA authorization, records request, LOR) | **PyPDFForm** 5.6 ✅ / pypdf | Flattened or XFA forms have no fields → overlay with reportlab |
+| SMS | Mock an outbox panel. Twilio: unregistered 10DLC numbers are blocked (error 30034) ✅ | TCPA consent |
+| Email | Mock outbox; Resend (likely needs a verified domain to email others ⚠️) | Streamlit reruns double-send → idempotency key + outbox table |
+| Notifications | Slack incoming webhook (5 min) | The URL is a secret |
+| E-signature | Mock it (DocuSign JWT setup takes > 1 h) | — |
+| Calendar | `icalendar` .ics + `holidays` | DST shifts |
 
-**MCP rule:** MCP is a demo multiplier, not plumbing. Use it for (a) Claude acting live inside an official
-server, or (b) a FastMCP server exposing *your* pipeline (`case_status`, `missing_records`) so a paralegal
-can ask Claude Desktop (30–60 min to build). Inside the pipeline itself, use direct API calls.
-Current spec: 2026-07-28 (stateless, Streamable HTTP) ✅. The Claude API can call remote MCP servers via
-`mcp_servers` ✅.
+**MCP rule:** a demo multiplier, not plumbing. Two good uses:
+1. Claude Code ↔ n8n (building the workflow).
+2. A small FastMCP server exposing *your* pipeline (`case_status`, `missing_records`) so staff can ask Claude Desktop.
+
+Inside the pipeline, call APIs directly. MCP spec 2026-07-28 ✅.
 
 ## H: Human gate
-Use a Streamlit queue: item · AI output · confidence · source highlight · Approve / Edit / Reject.
-Log every action (an audit trail). This is a feature, not overhead: it's what the executive panel looks for.
+- **The real surface is where staff work:** a Slack approval (n8n Send-and-Wait) or a CRM task. Streamlit
+  is the demo cockpit: queue · AI output · confidence · source highlight · Approve / Edit / Reject.
+- **Audit log:** append-only JSONL or SQLite (user, time, model, prompt version, input hash), *not*
+  `session_state`, which is lost on refresh ✅.
 
-## W: Wait / external dependency
-PI leaks value in waits: records requests (HIPAA allows 30 days; reality is 45–90), adjuster responses,
-treatment follow-ups.
-**Pattern:** D (timer and age rules) → A (automatic follow-up) → H (escalate at threshold).
-Show an "open loops" board: everything pending, its age, and the next action.
+## W: Wait / external
+- **Pattern:** D (age rules; CA 5-day records rule) → A (auto follow-up letter) → H (escalate).
+- **Demo trick:** an injectable "today" plus seeded ages, so you can show "day 31" live.
+- Show an **open-loops board:** everything pending, its age, and the next action.
 
-## V: Voice
-Only if the brief is about calls or intake. Use Retell ($10 free credit) or Vapi ($5 credit, 1 free number)
-with a webhook to your backend (1–2 h). Otherwise transcribe recordings with `faster-whisper` and skip live
-telephony risk.
+## V: Voice / audio
+- **Recordings:** Gemini 3.5 Transcribe (free; speaker labels, timestamps, per-utterance language ID) ✅,
+  or `gpt-transcribe` ($0.0045/min, no speaker labels) ✅, or local `faster-whisper` (pre-download about 3 GB tonight).
+- **Live calls,** only if the brief is about calls: Gemini 3.8 Live (free, mid-call language switching ⚠️) or Retell/Vapi (1–2 h).
+- Swans' homepage literally says they don't build voice agents, so voice must be clearly what the brief wants.
 
 ## O: Orchestration
-A **workflow** (fixed steps in Python) by default; most PI ops are standard operating procedures. Use an
-**agent loop** (Claude Agent SDK / Pydantic AI) only where the number of steps is unpredictable (e.g.,
-chasing missing records across sources). Source: Anthropic, "Building effective agents" ✅.
+- Python workflow by default; persist each step's output per document so a crash can resume.
+- **Cache key** = hash(file + prompt version + model + schema).
+- **Retries:** `tenacity`, max 2, plus a per-run token budget. A spend-cap 429 has no `retry-after`, so don't retry it.
+- New Anthropic orgs may start in a lower "Evaluation" tier ✅. Test concurrency tonight.
+- Agent loop (Claude Agent SDK, or Pydantic AI v2 pinned `>=2.50,<3`) only where the number of steps is unpredictable.
 
 ## E: Evaluation
-- 15–20 hand-labeled synthetic cases in a CSV, scored with pytest
-- Show field-level accuracy, a confusion matrix for T nodes, escalation rate and cost per case
-- Show 2–3 failure cases and how they are routed to a human
+- The partner hand-writes **5 adversarial cases**: LLM-generated data scored by an LLM is circular.
+- Report **counts** ("13/15"), not "87%". A 6–15 case bake-off catches *gross* failures; it can't separate close models.
+- `scripts/check_providers.py` is a **connectivity smoke test**, not a bake-off.
+- **Synthetic data recipe:**
+  1. Jinja/HTML + Faker (+ Synthea for clinical realism).
+  2. Render with WeasyPrint.
+  3. Add scan noise with augraphy.
+  4. Keep the clean JSON as ground truth.
+- **No usable public PI datasets exist** ✅.
 
-**Synthetic data recipe:**
-1. Jinja/HTML templates filled by Faker (+ Synthea if you want clinical realism; it needs Java 17 and has no PDFs or notes).
-2. Render with WeasyPrint.
-3. Add scan noise with `augraphy`.
-4. Keep the clean JSON as ground truth.
+## N: Not a pipeline
+Dashboards (cases by stage, stalled loops, staff load), form or checklist redesign, CRM field changes,
+status pages, CSV/XLSX case-management exports, entity resolution, conflict checks.
 
-Blank forms: CMS-1500 (cms.gov), UB-04 (CMS MLN006926), CA CHP 555, TX CR-3.
+| Need | Tools |
+|---|---|
+| Dashboards | **Streamlit 1.64 + DuckDB/pandas + Altair** |
+| Messy exports | `pandera` for validation. Watch for Excel serial dates, merged headers, "N/A", duplicate matter IDs |
+| Dedup / conflict checks | `splink` or rapidfuzz with blocking. Require DOB or phone, or same-name clients merge. Conflict checks must handle aliases and maiden names |
+
+**Pitfall:** a chart with no next action reads as "nice". Tie every tile to a money lever and an owner.
 
 ---
 
-## Runtime provider tiers: local-first, paid as backup
-All of these speak the OpenAI-compatible API, so one client with a `base_url` switch covers them
-(`scripts/check_providers.py`).
+## Runtime providers: local-first, paid as backup
+**One wrapper function per provider, NOT one `base_url` switch.** Anthropic's OpenAI-compatible layer
+ignores `response_format`, logprobs and caching ✅, and Ollama `/v1` drops logprobs and `num_ctx` ✅.
 
 | Tier | Provider | Use | Data rule |
 |---|---|---|---|
-| 1. Local, no key | Ollama `gemma4:26b` (MoE, ~4B active, fast on the M4 Pro 48 GB) at `localhost:11434/v1` | Triage, short extraction, synthetic data generation | Anything; never leaves the laptop. **Pitch angle: "PHI never leaves the firm"** |
-| 2. Free cloud | Gemini via AI Studio (OpenAI-compatible endpoint); Cloudflare Workers AI (Clef/Jev); Groq (8K tokens/min, so short inputs only) | Long PDFs (Gemini reads them natively), development runs | **Synthetic only** (free tiers may train on inputs) |
-| 3. Paid backup | Anthropic (Haiku 4.5 / Sonnet 5.5), OpenAI (gpt-6-luna with logprobs) | Highest-accuracy runs, final demo if it wins the bake-off | Commercial terms |
+| 1. Local | Ollama `gemma4:26b` (native `/api/chat`, `num_ctx=32768`, `keep_alive="2h"`); alt `granite4.2:30b` | Triage, short extraction, data generation | Pitch: "can run on-prem; PHI need not leave the firm" (a laptop isn't firm infrastructure) |
+| 2. Free cloud | Gemini 3.8 Flash / 3.5 Transcribe / File Search (AI Studio); Cloudflare Workers AI (Jev/Clef) | Long PDFs, development, audio | **Synthetic only** |
+| 3. Paid | Anthropic (Haiku 4.5 / Sonnet 5.5 / Opus 5.5), OpenAI (GPT-6 Luna) | Best accuracy; final demo if it wins | Commercial terms |
 
-**Decide by bake-off, not ideology:** run the same 6–15 labeled cases through tiers 1–3 and demo on the
-winner. Show the comparison table (accuracy · $/case · data leaves the building?). The CTO panel will
-value it.
+**HIPAA / BAA:** Anthropic and OpenAI offer BAAs with zero data retention for API customers ⚠️ (confirm
+wording). Google Cloud signs BAAs for Vertex AI, **not** for the AI Studio free tier. Fable 5.1 requires
+30-day retention, so avoid it for PHI.
+**Say:** "Demo on synthetic data; in production, PHI runs on-prem or only through BAA-covered, zero-retention endpoints."
 
-**HIPAA / BAA (the CTO will ask):** Anthropic and OpenAI offer BAAs for API customers with zero data
-retention (enterprise arrangement) ⚠️ (confirm wording if asked). Google Cloud signs BAAs for Vertex AI,
-**not** for the AI Studio free tier. Local Ollama needs no BAA because no data leaves.
-**Say:** "Demo on synthetic data; in production, PHI runs locally or only through BAA-covered,
-zero-retention endpoints."
-
-## Model / cost ladder (≈50-document demo)
-| Node | Model | ~Cost for 50 docs |
+## Cost ladder (≈50 documents)
+| Step | Model | Cost |
 |---|---|---|
-| T triage | Jev / Clef-flash (or Haiku 4.5, gpt-6-luna, Flash-Lite) | < $0.15 |
-| X extraction | Sonnet 5.5 (Haiku for simple forms; Flash-Lite during development) | ~$1 |
-| Long-file reading | Sonnet 5.5 + prompt caching | ~$4 |
-| G drafting | Opus 5.5 at medium effort / Sonnet 5.5 | ~$1–2 |
-| E LLM-judge (if needed) | Opus 5.5 at low effort, or Batch (50% off) | ~$1 |
+| T | Gemini free / Haiku / Luna | < $0.15 |
+| X | Sonnet 5.5 | ~$1 |
+| Long-file read | Sonnet + cache | ~$4 |
+| G | Sonnet, or Opus 5.5 at **effort low–medium** | ~$1–2 |
 
-One full run ≈ $8, or $15–20 with thinking tokens and retries. Budget $30–80 including development runs.
-**Develop on free Gemini or local models with synthetic data; run the final demo on Claude.**
+One full run ≈ $8; with development runs, $30–80. Sonnet 5.x / Fable tokenizers produce ~30% more tokens for the same text.
+Prices ✅: Haiku 4.5 $1/$5 · Sonnet 5.5 $2/$10 · Opus 5.5 $4/$20 · Batch −50%.
 
-Anthropic prices ✅: Haiku 4.5 $1 / $5 · Sonnet 5.5 $2 / $10 · Opus 5.5 $4 / $20 · Fable 5.1 $10 / $50 ·
-Batch −50% · cache read 0.1×.
-**The Claude API has no logprobs** ✅.
-
-## Keys and accounts (set up tonight)
-| Account | Why | Check / get |
-|---|---|---|
-| **Anthropic API** | App runtime. **A Claude Max subscription includes NO API credit** ✅, and terms forbid using subscription login as an app backend ✅ | platform.claude.com → Settings → Billing (balance) · Settings → Limits (tier) · API keys. Add $25–50, set a spend limit, run one Haiku test call |
-| **Google AI Studio** | Free Gemini key for development (synthetic data only; the free tier trains on inputs ✅) | aistudio.google.com |
-| **Cloudflare** | One account gives you **Jev and Clef** on Workers AI | dash.cloudflare.com → Workers AI → account ID + API token |
-| TypeSafe (Jev direct) | Try it; access is uncertain ⚠️ | console.typesafe.ai |
-| OpenAI API (optional) | Logprobs triage via gpt-6-luna. **ChatGPT/Codex includes no API credit** ✅ | platform.openai.com → Settings → Billing, $5 minimum |
-| Ollama (optional) | Offline fallback | `ollama pull qwen3.5:9b` |
-| Not available | — | GitHub Models (retired Jul 30, 2026) ✅; OpenAI Decisions API (preview, no docs yet) ✅ |
+## Hype to avoid tomorrow
+- **OpenAI Decisions API:** preview, no docs.
+- **Astra for Law:** gated.
+- **OpenAI Agents API / Claude Managed Agents:** beta, heavy.
+- **Computer-use / browser agents:** flaky live.
+- **Zapier Next Gen Zaps:** waitlist.
+- **Make Maia:** beta, and not Swans' main stack.
+- **n8n 2.42 / Agent Builder / Assistant:** preview.
+- **Fable 5.1:** costly, and needs 30-day retention.
+- **Jev/Clef as hard dependencies.**
+- **"1M context" local models:** won't hold that context in 48 GB.
+- **MedGemma locally:** not worth the setup.
+- **Case valuation:** EvenUp's turf, plus unauthorized-practice risk.

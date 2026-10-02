@@ -2543,6 +2543,7 @@ dependencies = [
     { name = "python-dateutil" },
     { name = "python-dotenv" },
     { name = "rapidfuzz" },
+    { name = "requests" },
     { name = "streamlit" },
 ]
 
@@ -2563,6 +2564,7 @@ requires-dist = [
     { name = "python-dateutil" },
     { name = "python-dotenv" },
     { name = "rapidfuzz" },
+    { name = "requests", specifier = ">=2.34.2" },
     { name = "streamlit" },
 ]
 

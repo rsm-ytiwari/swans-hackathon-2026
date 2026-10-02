@@ -12,6 +12,7 @@ Two-person team building a working AI automation for one real personal-injury (P
 | Choosing a tool or model for a step | `.claude/skills/kickoff/capability-catalog.md` |
 | Before writing code | `plan/decision.md` + `plan/tasks.md` (if they don't exist, run `/kickoff` first) |
 | 3:00pm, or packaging | Run `/submit` |
+| Before the demo / pitch | `docs/demo-day.md` |
 
 **Never propose a solution before reading the brief and `plan/decision.md`.**
 
