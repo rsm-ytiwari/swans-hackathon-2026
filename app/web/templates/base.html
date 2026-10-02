@@ -4,16 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Case digest{% endblock %}</title>
+  {# Public Sans when online; falls back to the system font offline (demo still works with wifi off). #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/static/tailwind.js"></script>
   <script>
     // Design tokens (shared by both views). Replace values from plan/ui-spec.md, not per page.
     tailwind.config = {
       theme: { extend: {
+        // Target design tokens (prototype/target-design/HANDOFF.md). Colour only for meaning.
         colors: {
-          ink: '#0f172a', muted: '#64748b', line: '#e2e8f0', surface: '#f8fafc',
-          brand: '#1d4ed8', ok: '#15803d', warn: '#b45309', bad: '#b91c1c',
+          ink: '#14172B', body: '#2E3244', muted: '#5B6070', line: '#E3E5EB', hair: '#EEF0F3',
+          surface: '#F4F5F8', chip: '#F1F2F6',
+          brand: '#3B2BD9', brandbg: '#F4F2FF', brandline: '#D9D5FB',   // firm accent (indigo)
+          teal: '#0E6B5C', tealbg: '#E7F3F0',                         // provider portal accent
+          ok: '#067647', okbg: '#ECFDF3', warn: '#B54708', warnbg: '#FEF3E2', bad: '#B42318', badbg: '#FDECEA',
         },
-        fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+        borderRadius: { card: '14px' },
+        fontFamily: { sans: ['"Public Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
       } }
     }
   </script>

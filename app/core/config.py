@@ -66,6 +66,11 @@ FLAG_DOC_CHUNK_CHARS = 60000  # max characters of document text sent to the mode
 FLAG_MAX_ASSERTIONS = 15      # key factual assertions extracted from the case file
 FLAG_QUOTE_MATCH = 90         # rapidfuzz partial_ratio needed for a quote to count as found in its source
 
+# ---- Worth vs coverage (firm view) ----
+# Coverage on the bar = the per-person limit parsed from the Policy Limits field (facts.reachable_coverage).
+# ASSUMED until an attorney confirms that is the right ceiling; set to "" once confirmed.
+COVERAGE_ASSUMPTION = "ASSUMED: per-person limit, confirm with attorney"
+
 # ---- Case journey (firm view) ----
 # The first document received in a folder whose name contains the key marks that milestone.
 MILESTONE_FOLDERS = [

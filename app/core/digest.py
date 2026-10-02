@@ -20,16 +20,22 @@ class Sentence(pydantic.BaseModel):
 
 class BottomLine(pydantic.BaseModel):
     sentences: list[Sentence]
+    injuries: list[str] = []  # short labels, e.g. "Both knees"
 
+
+# The firm view labels the three sentences in this order (app/web/templates/firm/index.html).
+LABELS = ("What happened", "Where it stands", "Biggest risk")
 
 SYSTEM = (
     "You brief a personal-injury attorney who has 10 seconds. Use only the case material given. "
-    "Write exactly 3 short sentences (max 25 words each): (1) where the case stands and what it turns "
-    "on, (2) what is blocking progress right now, including who it is waiting on, (3) the most important "
-    "recent development. Write complete, plain sentences a busy reader understands at a glance: no "
-    "abbreviations or jargon (write 'range of motion', not 'ROM'), no semicolons, no lists inside a sentence, "
-    "no hedging, no legal citations. For each sentence list the tags "
-    "(like Note:123) of the records that support it, copied exactly from the material."
+    "Write exactly 3 short sentences (max 20 words each), in this order: (1) WHAT HAPPENED: the incident "
+    "and the injuries; (2) WHERE IT STANDS: the procedural stage and the latest concrete step taken (do not "
+    "list overdue tasks, the page shows those separately); (3) BIGGEST RISK: the single biggest threat to "
+    "the case's value or liability, and why. Write complete, plain sentences a busy reader understands at a "
+    "glance: no abbreviations or jargon (write 'range of motion', not 'ROM'), no semicolons, no lists inside "
+    "a sentence, no hedging, no legal citations. For each sentence list the tags (like Note:123) of the "
+    "records that support it, copied exactly from the material. Also list the client's injuries as at most "
+    "4 short labels of 1 to 3 words each (like 'Both knees'), taken from the material."
 )
 
 
@@ -50,8 +56,8 @@ def _material(con, mid: int, today: date) -> tuple[str, set[str]]:
     return text, {f"{a}:{b}" for a, b in _TAG.findall(text)}
 
 
-def bottom_line(con, mid: int, today: date | None = None) -> list[dict] | None:
-    """[{text, sources: [Source]}] or None when no AI provider is available."""
+def story(con, mid: int, today: date | None = None) -> dict | None:
+    """{"lines": [{label, text, sources: [Source]}], "injuries": [str]} or None when no AI provider is available."""
     today = today or date.today()
     material, tags = _material(con, mid, today)
     try:
@@ -60,12 +66,18 @@ def bottom_line(con, mid: int, today: date | None = None) -> list[dict] | None:
     except (llm.LLMUnavailable, llm.LLMBadOutput):
         return None
     out = []
-    for s in res.data.sentences[:3]:
+    for label, s in zip(LABELS, res.data.sentences[:3]):
         srcs = []
         for tag in s.sources:
             tag = tag.strip("[] ")
             if tag in tags:
                 kind, cid = tag.split(":")
                 srcs.append(facts.Source(kind, int(cid)))
-        out.append({"text": s.text.strip(), "sources": srcs})
-    return out
+        out.append({"label": label, "text": s.text.strip(), "sources": srcs})
+    return {"lines": out, "injuries": [i.strip() for i in res.data.injuries[:4] if i.strip()]}
+
+
+def bottom_line(con, mid: int, today: date | None = None) -> list[dict] | None:
+    """The three labelled sentences only (same cached model call as story())."""
+    st = story(con, mid, today)
+    return st["lines"] if st else None

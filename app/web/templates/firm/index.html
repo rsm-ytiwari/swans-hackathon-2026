@@ -2,138 +2,288 @@
 {% import "components/ui.html" as ui %}
 {% block title %}{{ m.client_name }} · case brief{% endblock %}
 {% block body %}
-{# First screen budget (plan/v1.md): 5 blocks, ~180 words, no scrolling at 1440×900. Answers, not counts. #}
-<div class="max-w-5xl mx-auto px-6 py-6 space-y-5">
+{# Look: prototype/target-design/1-firm-view.html. Content + budget: prototype/design-prompt.md (4 questions,
+   ~180 words above the fold at 1440×900, answers not counts, detail on demand). Every value from clio.db. #}
+{% set lbl = "text-[12px] font-bold uppercase tracking-[.08em] text-muted" %}
+{% set card = "bg-white border border-line rounded-card" %}
 
-  {# 1. Header: who, what happened, where it stands, when we last spoke to the client #}
-  <header class="flex items-start justify-between gap-6">
-    <div class="min-w-0">
-      <h1 class="text-2xl font-semibold">{{ ui.ref(client.source if client else None, m.client_name) }}</h1>
-      <p class="text-sm text-muted mt-0.5">
-        {{ ui.ref(incident_date.source, incident_date.value | nice_date) }} · {{ summary.value }}{{ ui.cite(summary.source) }}
-      </p>
-      <p class="text-sm mt-1">
-        <span class="font-medium">{{ m.stage_name }}</span>
-        <span class="text-muted">· stage {{ (stage_index or 0) + 1 }} of {{ stages | length }} · open since {{ m.open_date | nice_date }}</span>
-        {% if last_client_contact %}
-        <span class="text-muted">· last spoke to client</span>
-        {{ ui.ref(last_client_contact.source, (today - last_client_contact.when).days ~ " days ago") }}
-        {% endif %}
-      </p>
+<header class="bg-white border-b border-line">
+  <div class="max-w-[1360px] mx-auto px-4 sm:px-8 py-3 flex flex-wrap gap-3 items-center justify-between">
+    <nav class="flex gap-2 items-center text-sm text-muted min-w-0">
+      <a href="/" class="font-extrabold text-ink hover:no-underline">Case brief</a><span>/</span>
+      <a href="/" class="hover:text-ink">Matters</a><span>/</span>
+      <span class="text-ink font-semibold truncate">{{ m.client_name }} · {{ m.display_number }}</span>
+    </nav>
+    <div class="flex gap-2.5 items-center flex-wrap">
+      <span class="hidden md:inline text-[13px] text-muted">Read-only from Clio{% if synced %} · synced {{ synced }}{% endif %}</span>
+      <a href="#since" onclick="document.getElementById('since').open = true"
+         class="text-sm font-semibold px-3.5 py-2 rounded-[10px] border border-brandline bg-brandbg text-brand hover:no-underline">
+        {{ changes | length }} update{{ "" if changes | length == 1 else "s" }} since {{ since | nice_date }}</a>
+      <a href="/m/{{ mid }}/share" class="text-sm font-bold px-4 py-2 rounded-[10px] bg-brand text-white hover:bg-[#2A1DA8]">Share with a provider</a>
     </div>
-    <a href="/m/{{ mid }}/share" class="shrink-0 rounded-lg border border-line bg-white px-3 py-2 text-sm hover:border-brand">Share with a provider →</a>
-  </header>
+  </div>
+</header>
 
-  {# 2. Bottom line: three sentences, each cited #}
-  <section class="bg-white rounded-xl border border-line p-5">
-    <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Bottom line</h2>
-    {% if bottom_line %}
-    <ol class="mt-2 space-y-1.5 text-[15px] leading-snug">
-      {% for s in bottom_line %}<li>{{ s.text }}{% for src in s.sources %}{{ ui.cite(src) }}{% endfor %}</li>{% endfor %}
-    </ol>
-    {% elif ai_status.status == "running" %}
-    <p class="mt-2 text-sm text-muted animate-pulse">AI analysis running… everything else on this page is already live. This refreshes on its own.</p>
-    <meta http-equiv="refresh" content="8">
-    {% else %}
-    <p class="mt-2 text-sm text-bad">{{ ai_check.message if not ai_check.ok else "AI analysis failed: " ~ (ai_status.error or "the provider returned no usable answer") ~ ". Everything else on this page is computed directly from the case system." }}</p>
-    {% endif %}
+<main class="max-w-[1360px] mx-auto px-4 sm:px-8 pt-4 pb-12 flex flex-col gap-3">
+
+  {# ---- Q1: who is this and what happened ---- #}
+  <section class="{{ card }} px-6 py-4 flex flex-wrap gap-x-6 gap-y-3 items-center">
+    <div class="w-14 h-14 rounded-full bg-[#E8E6FB] text-brand flex items-center justify-center text-2xl font-extrabold shrink-0">{{ initials }}</div>
+    <div class="flex-[999_1_480px] min-w-0 flex flex-col gap-2">
+      <h1 class="text-[30px] sm:text-[34px] leading-none font-extrabold tracking-[-0.02em]">{{ ui.ref(client.source if client else None, m.client_name) }}</h1>
+      <p class="text-[16px] leading-snug text-body">
+        {{ (summary.value | string).split(". ")[0].rstrip(".") if summary.value and story and story.injuries else (summary.value or m.description) }}
+        · <strong class="text-ink">{{ incident_date.value | nice_date }}</strong>{{ ui.cite(summary.source or incident_date.source) }}</p>
+      {% if story and story.injuries %}
+      <div class="flex flex-wrap gap-2">
+        {% for i in story.injuries %}<span class="text-[13px] font-semibold px-2.5 py-1 rounded-full bg-chip">{{ i }}</span>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <dl class="flex-[1_1_380px] grid grid-cols-2 gap-x-6 gap-y-2.5">
+      <div><dt class="{{ lbl }}">Open</dt><dd class="mt-0.5 text-[19px] font-bold">{{ case_age or "—" }}</dd></div>
+      <div><dt class="{{ lbl }}">Last talked to client</dt><dd class="mt-0.5 text-[19px] font-bold">
+        {% if last_client_contact %}{% set d = (today - last_client_contact.when).days %}{{ ui.ref(last_client_contact.source, "today" if d == 0 else (d ~ " day" ~ ("" if d == 1 else "s") ~ " ago")) }}{% else %}—{% endif %}</dd></div>
+      <div><dt class="{{ lbl }}">Attorney</dt><dd class="mt-0.5 text-[15px] font-semibold">{{ m.responsible_attorney or "—" }}</dd></div>
+      <div class="min-w-0"><dt class="{{ lbl }}">Next date</dt><dd class="mt-0.5 text-[15px] font-semibold truncate" title="{{ next_date.title if next_date }}">
+        {% if next_date %}{{ ui.ref(next_date.source, next_date.when | jdate ~ " · " ~ next_date.title) }}{% else %}—{% endif %}</dd></div>
+    </dl>
   </section>
 
-  <div class="grid lg:grid-cols-5 gap-5">
-    {# 3. Do next: overdue first, max 5 rows #}
-    <section class="lg:col-span-3 bg-white rounded-xl border border-line p-5">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Do next</h2>
-      <ul class="mt-2">
-        {% for t, label in do_next %}
-        <li class="flex items-start justify-between gap-3 py-1.5">
-          <div class="text-sm min-w-0">{{ ui.ref(t.source, label) }}
-            {% if t.waiting_on %}<span class="text-xs text-muted"> · waiting on {{ t.waiting_on }}</span>{% endif %}</div>
-          {{ ui.pill(t.days_from_today | relative, "bad" if t.days_from_today < 0 else "neutral") }}
-        </li>
-        {% else %}<li class="text-sm text-muted">Nothing open.</li>{% endfor %}
-      </ul>
-      {% if do_next_more %}<p class="text-xs text-muted mt-1">+ {{ do_next_more }} later</p>{% endif %}
-    </section>
-
-    {# 4. Worth vs coverage: four numbers #}
-    <section class="lg:col-span-2 bg-white rounded-xl border border-line p-5">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Worth vs coverage</h2>
-      <dl class="mt-2 space-y-2 text-sm">
-        <div class="flex justify-between gap-3"><dt class="text-muted">Estimated value</dt>
-          <dd class="font-semibold">{{ ui.ref(money.case_value.source, money.case_value.value | money) }}</dd></div>
-        <div class="flex justify-between gap-3"><dt class="text-muted shrink-0">Coverage</dt>
-          <dd class="text-right">{{ ui.ref(money.policy_limits.source, coverage_line or "—") }}</dd></div>
-        <div class="flex justify-between gap-3"><dt class="text-muted">Medical billed</dt>
-          <dd class="font-semibold">{{ money.provider_billed_total | money }}
-            {% if money.specials_mismatch %}{{ ui.pill("≠ specials field", "bad") }}{% else %}<span class="text-ok text-xs font-normal">✓ matches specials</span>{% endif %}</dd></div>
-        <div class="flex justify-between gap-3"><dt class="text-muted shrink-0">Liens</dt>
-          <dd class="text-right">{{ ui.ref(money.liens.source, liens_line or "—") }}</dd></div>
-      </dl>
-    </section>
-  </div>
-
-  {# 5. Red flags: one line each, click for the evidence #}
-  <section class="bg-white rounded-xl border border-line p-5" x-data="{ open: null }">
-    <div class="flex items-baseline justify-between">
-      <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Red flags</h2>
-      {% if flags %}<span class="text-[11px] text-muted">contradiction check: {{ flags.ai }}</span>{% endif %}
+  {# ---- Q2: where does it stand (stage + journey) + the one blocker ---- #}
+  <section class="{{ card }} px-6 py-3.5 flex flex-col gap-2.5">
+    <div class="flex justify-between items-baseline flex-wrap gap-2">
+      <p class="{{ lbl }}">Where the case stands</p>
+      <p class="text-sm text-muted">{% if stage_index is not none %}Stage {{ stage_index + 1 }} of {{ stages | length }} · {% endif %}<span class="text-ink font-semibold">{{ m.stage_name }}</span>{% if case_age %} · running {{ case_age }}{% endif %}</p>
     </div>
-    {% if flags and flags["items"] %}
-    <ul class="mt-2 divide-y divide-line">
-      {% for f in flags["items"][:5] %}
-      <li class="py-1.5">
-        <button class="w-full flex items-center gap-2 text-left text-sm" @click="open = open === {{ loop.index }} ? null : {{ loop.index }}">
-          <span class="h-2 w-2 shrink-0 rounded-full {{ {'high': 'bg-bad', 'medium': 'bg-warn', 'low': 'bg-slate-300'}[f.severity] }}"></span>
-          <span class="min-w-0 flex-1">{{ f.title }}</span>
-          <span class="text-[11px] text-muted">{{ "contradiction" if f.kind == "contradiction" else "check" }}</span>
-        </button>
-        <div x-show="open === {{ loop.index }}" x-cloak class="mt-2 ml-4 text-sm text-muted space-y-1.5">
-          <p>{{ f.detail }}</p>
-          {% for e in f.evidence %}
-          <blockquote class="border-l-2 border-line pl-3">“{{ e.quote }}” {{ ui.ref(e.source, (e.source.label or e.source.clio_type) ~ (" p." ~ e.page if e.page else "")) }}</blockquote>
-          {% endfor %}
-        </div>
+    <ol class="grid gap-1.5" style="grid-template-columns: repeat({{ stages | length or 1 }}, minmax(0, 1fr))">
+      {% for s in stages %}
+      {% set cur = loop.index0 == stage_index %}{% set done = stage_index is not none and loop.index0 <= stage_index %}
+      <li class="min-w-0">
+        <div class="h-2 rounded {{ 'bg-brand' if done else 'bg-line' }} {{ 'ring-[3px] ring-brandline' if cur }}"></div>
+        <div class="mt-1.5 text-[12px] leading-tight {{ 'text-ink font-bold' if cur else 'text-muted hidden sm:block' }} {{ 'text-center sm:text-left' if cur }}">{{ s }}</div>
       </li>
       {% endfor %}
-    </ul>
-    {% if flags["items"] | length > 5 %}<p class="text-xs text-muted mt-1">+ {{ flags["items"] | length - 5 }} more below</p>{% endif %}
-    {% else %}<p class="mt-2 text-sm text-muted">No red flags found.</p>{% endif %}
+    </ol>
+    {% if journey %}
+    <ol class="flex gap-0 overflow-x-auto border-t-2 border-line">
+      {% for e in journey %}
+      <li class="flex-1 min-w-[110px] pt-1.5 pr-3 -mt-[2px] border-t-[3px] border-brand">
+        <p class="text-[12px] text-muted">{{ e.when | jdate }}</p>
+        <p class="text-[13px] font-semibold leading-tight truncate" title="{{ e.title }}">{{ ui.ref(e.source, e.title) }}</p>
+      </li>
+      {% endfor %}
+      <li class="flex-1 min-w-[90px] pt-1.5 -mt-[2px] border-t-[3px] border-line">
+        <p class="text-[12px] font-bold text-brand">{{ today | jdate }}</p><p class="text-[13px] font-semibold">Today</p>
+      </li>
+    </ol>
+    {% endif %}
+    {% if blocker %}
+    <div class="flex gap-3.5 items-center bg-badbg rounded-[10px] px-4 py-2.5 flex-wrap">
+      <span class="text-[12px] font-extrabold text-white bg-bad rounded-md px-2 py-1">{{ "BLOCKED" if blocker.blocked else "OVERDUE" }}</span>
+      <p class="flex-[1_1_380px] text-[16px] font-bold text-ink">
+        {% if blocker.blocked %}Waiting on {{ blocker.who }}: {{ blocker.label[:1].lower() ~ blocker.label[1:] }}{% else %}{{ blocker.label }} ({{ blocker.who | lower }}){% endif %}, {{ blocker.days }} day{{ "" if blocker.days == 1 else "s" }} overdue.{{ ui.cite(blocker.task.source) }}</p>
+    </div>
+    {% endif %}
   </section>
 
-  {# ---------- Second layer: on demand ---------- #}
-  <div class="space-y-2 pt-2">
-    <details class="bg-white rounded-xl border border-line px-5 py-3">
-      <summary class="cursor-pointer text-sm font-medium">Since you last looked
-        <span class="text-muted font-normal">· {{ changes | length }} items since {{ since | nice_date }}</span></summary>
-      <form class="mt-2 text-xs text-muted">Last looked on <input type="date" name="since" value="{{ since.isoformat() }}" class="border border-line rounded px-1" onchange="this.form.submit()"></form>
-      <ul class="mt-2 text-sm space-y-1">
-        {% for e in changes[:20] %}<li><span class="text-muted">{{ e.when | nice_date }} · {{ e.kind }}</span> · {{ ui.ref(e.source, e.title) }}</li>{% endfor %}
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] items-start">
+    <div class="flex flex-col gap-4 min-w-0">
+
+      {# ---- The case in 3 lines (AI, cited) ---- #}
+      <section class="{{ card }} px-6 py-4 flex flex-col gap-2.5">
+        <p class="{{ lbl }}">The case in 3 lines</p>
+        {% if story %}
+        <dl class="grid sm:grid-cols-[140px_minmax(0,1fr)] gap-x-4 gap-y-1 sm:gap-y-2 text-[15.5px] leading-snug">
+          {% for s in story.lines %}
+          <dt class="font-bold text-muted {{ 'mt-2 sm:mt-0' if not loop.first }}">{{ s.label }}</dt>
+          <dd>{{ s.text }}{% if s.sources %}{{ ui.cite(s.sources[0]) }}{% endif %}</dd>
+          {% endfor %}
+        </dl>
+        {% elif ai_status.status == "running" %}
+        <div class="space-y-3 animate-pulse" aria-label="AI analysis running">
+          {% for w in ["92%", "80%", "86%"] %}<div class="h-4 rounded bg-chip" style="width: {{ w }}"></div>{% endfor %}
+          <p class="text-[13px] text-muted">AI analysis running… everything else on this page is already live.</p>
+        </div>
+        <meta http-equiv="refresh" content="8">
+        {% else %}
+        <p class="text-[15px] text-muted">AI off: {{ ai_check.message if not ai_check.ok else ("the analysis failed (" ~ (ai_status.error or "no usable answer") ~ ")") }}. Everything else on this page is computed directly from the case system.</p>
+        {% endif %}
+      </section>
+
+      {# ---- Q3: what needs me now ---- #}
+      <section class="{{ card }} px-6 py-3.5 flex flex-col gap-0.5">
+        <div class="flex justify-between items-baseline"><p class="{{ lbl }}">Do next</p>
+          {% if do_next_more %}<a href="#all-tasks" onclick="document.getElementById('all-tasks').open = true" class="text-[13px] font-semibold">+{{ do_next_more }} more</a>{% endif %}</div>
+        {% for r in do_next %}
+        {% set d = r.t.days_from_today %}
+        <div class="flex gap-3 items-start py-1.5 {{ 'border-b border-hair' if not loop.last }}">
+          <span class="w-[68px] shrink-0 text-center text-[12px] font-bold rounded-md px-1.5 py-0.5 whitespace-nowrap {{ 'text-bad bg-badbg' if d is not none and d < 0 else 'text-body bg-chip' }}">
+            {%- if d is none %}no date{% elif d < 0 %}{{ -d }}d late{% elif d == 0 %}today{% else %}in {{ d }}d{% endif -%}</span>
+          <div class="min-w-0"><p class="text-[15px] font-semibold leading-snug">{{ ui.ref(r.t.source, r.label) }}</p>
+            <p class="text-[13px] text-muted truncate">{{ "Waiting on " ~ r.who if r.who not in ("Our team",) else "Our team" }}</p></div>
+        </div>
+        {% else %}<p class="text-[14px] text-muted py-1">Nothing open on this case.</p>{% endfor %}
+      </section>
+    </div>
+
+    <aside class="flex flex-col gap-4 min-w-0">
+      {# ---- Q4: is anything wrong ---- #}
+      <section class="{{ card }} px-5 py-3.5 flex flex-col gap-2 {{ 'border-[#F4C7C2]' if flag_cards }}">
+        <div class="flex justify-between items-baseline">
+          <p class="{{ lbl }} {{ '!text-bad' if flag_cards }}">Red flags{% if flag_cards %} · {{ flag_cards | length }}{% endif %}</p>
+          {% if flag_cards and flag_cards | length > 3 %}<a href="#all-flags" onclick="document.getElementById('all-flags').open = true" class="text-[13px] font-semibold">+{{ flag_cards | length - 3 }} more</a>{% endif %}
+          {% if flags and flags.ai == "not run" and ai_status.status == "running" %}<span class="text-[12px] text-muted animate-pulse">checking records…</span>{% endif %}
+        </div>
+        {% for c in (flag_cards or [])[:3] %}
+        <button type="button" onclick="document.getElementById('flag-{{ loop.index }}').showModal()"
+          class="group text-left border border-line rounded-[10px] pl-3.5 pr-3 py-2 flex items-center gap-3 hover:border-brandline hover:bg-brandbg/40">
+          <span class="h-2 w-2 shrink-0 rounded-full {{ {'high': 'bg-bad', 'medium': 'bg-warn'}.get(c.f.severity, 'bg-muted') }}"></span>
+          <span class="min-w-0 flex-1"><span class="block text-[15px] font-bold leading-snug">{{ c.short }}</span>
+            <span class="block text-[13.5px] text-body leading-snug truncate">{{ c.sub }}</span></span>
+          <span class="text-[13px] font-semibold text-brand whitespace-nowrap">{{ "Compare" if c.f.kind == "contradiction" else "Evidence" }} →</span>
+        </button>
+        {% else %}
+        <p class="text-[14px] text-muted">{{ "Nothing wrong found by the checks so far." if flags else "Red-flag checks unavailable." }}</p>
+        {% endfor %}
+      </section>
+
+      {# ---- Q: worth vs what can pay (code) ---- #}
+      <section class="{{ card }} px-5 py-3.5 flex flex-col gap-2.5">
+        <div class="flex justify-between items-baseline gap-3 flex-wrap">
+          <p class="{{ lbl }}">Worth vs. what can pay</p>
+          <p class="text-[13px] text-muted">Est. value <span class="text-[22px] font-extrabold text-ink ml-1">{{ ui.ref(money.case_value.source, mv.value | money) }}</span></p>
+        </div>
+        {% if mv.value or mv.billed %}
+        <div class="relative pt-1">
+          <div class="h-7 rounded-lg bg-chip overflow-hidden flex">
+            <div class="bg-brand" style="width: {{ mv.billed_pct }}%"></div>
+            <div class="bg-[#8D84EE]" style="width: {{ mv.liens_pct }}%"></div>
+          </div>
+          {% if mv.reachable %}<div class="absolute top-0 -bottom-1 w-[2px] bg-bad" style="left: {{ mv.cov_pct }}%"></div>{% endif %}
+        </div>
+        <div class="grid grid-cols-3 gap-3 text-[13px]">
+          <div><span class="inline-block w-2.5 h-2.5 rounded-sm bg-brand"></span> Medical billed<br>
+            <strong class="text-[16px]">{{ mv.billed | money }}</strong>
+            {% if money.specials_mismatch %}<span class="block text-bad font-semibold">≠ specials field</span>{% else %}<span class="text-ok text-[12px]">✓ specials</span>{% endif %}</div>
+          <div><span class="inline-block w-2.5 h-2.5 rounded-sm bg-[#8D84EE]"></span> Liens<br>
+            <strong class="text-[16px]">{{ ui.ref(money.liens.source, mv.liens | money) if mv.liens else "—" }}</strong></div>
+          <div><span class="inline-block w-2.5 h-[2px] bg-bad align-middle"></span> Coverage<br>
+            <strong class="text-[16px] text-bad">{{ ui.ref(money.policy_limits.source, mv.reachable | money) if mv.reachable else "—" }}</strong>
+</div>
+        </div>
+        {% if mv.caption or mv.assumption %}<p class="text-[13px] text-muted leading-snug">{{ mv.caption or "" }}
+          {% if mv.assumption %}<span class="font-semibold text-warn">Coverage is {{ mv.assumption }}.</span>{% endif %}</p>{% endif %}
+        {% else %}<p class="text-sm text-muted">No value or bills recorded yet.</p>{% endif %}
+      </section>
+    </aside>
+  </div>
+
+  {# ---------- Second layer: opened on demand ---------- #}
+  <div class="flex flex-col gap-2 pt-2">
+    <details id="since" class="{{ card }} px-6 py-3.5 group">
+      <summary class="cursor-pointer flex items-baseline gap-3 flex-wrap"><span class="text-[15px] font-bold">Since you last looked</span>
+        <span class="text-sm text-muted">{{ changes | length }} update{{ "" if changes | length == 1 else "s" }} since {{ since | nice_date }}</span></summary>
+      <form class="mt-3 text-[13px] text-muted">Last looked on <input type="date" name="since" value="{{ since.isoformat() }}" max="{{ today.isoformat() }}" class="border border-line rounded px-1.5 py-0.5" onchange="this.form.submit()"></form>
+      {% if tiles %}
+      <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        {% for tl in tiles %}
+        <div class="bg-[#F7F8FA] rounded-[10px] p-3.5"><p class="text-[26px] font-extrabold leading-none">{{ tl.n }}</p>
+          <p class="mt-1 text-[14px] text-body">{{ tl.label }}</p>
+          <p class="mt-1 text-[12.5px] text-muted truncate">latest: {{ ui.ref(tl.latest.source, tl.latest.title | doc_label if tl.latest.kind == "document" else tl.latest.title) }}</p></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <ul class="mt-3 text-[14px] divide-y divide-hair">
+        {% for e in changes[:25] %}<li class="py-1.5 flex gap-3"><span class="text-muted w-24 shrink-0">{{ e.when | nice_date }}</span><span class="text-muted w-20 shrink-0">{{ e.kind }}</span><span class="min-w-0">{{ ui.ref(e.source, e.title | doc_label if e.kind == "document" else e.title) }}</span></li>
+        {% else %}<li class="py-1.5 text-muted">Nothing new since then.</li>{% endfor %}
       </ul>
     </details>
 
-    <details class="bg-white rounded-xl border border-line px-5 py-3">
-      <summary class="cursor-pointer text-sm font-medium">Providers & bills <span class="text-muted font-normal">· {{ providers | length }} billing providers</span></summary>
-      <table class="mt-2 w-full text-sm"><tbody>
-        {% for p in providers %}
-        <tr class="border-t border-line"><td class="py-1.5">{{ p.party.name }}</td>
-          <td class="text-muted">{% for d in p.records %}{{ ui.ref(d.source, "records") }} {% endfor %}{% for d in p.bills %}{{ ui.ref(d.source, "bill") }}{% endfor %}</td>
-          <td class="text-right font-medium">{{ p.billed_total | money }}</td></tr>
-        {% endfor %}
-      </tbody></table>
+    <details class="{{ card }} px-6 py-3.5">
+      <summary class="cursor-pointer flex items-baseline gap-3 flex-wrap"><span class="text-[15px] font-bold">Treating providers</span>
+        <span class="text-sm text-muted">{{ money.provider_billed_total | money }} billed across {{ providers | length }}
+          {% if money.specials_mismatch %}· <span class="text-bad font-semibold">bills ≠ specials field</span>{% else %}· <span class="text-ok">bills match the specials field ✓</span>{% endif %}</span></summary>
+      <div class="mt-3 overflow-x-auto">
+        <table class="w-full min-w-[760px] text-[14px]">
+          <thead><tr class="text-left text-muted font-semibold border-b border-line">
+            <th class="py-2 font-semibold">Provider</th><th class="py-2 font-semibold">Billed</th><th class="py-2 font-semibold">Records</th><th class="py-2 font-semibold">Shared view</th><th></th></tr></thead>
+          <tbody>
+          {% set top = (providers | map(attribute="p") | map(attribute="billed_total") | max) if providers else 0 %}
+          {% for r in providers %}
+          <tr class="border-b border-hair align-top">
+            <td class="py-2.5 pr-4 font-semibold">{{ ui.ref(r.p.party.source, r.p.party.name) }}<div class="text-[12.5px] font-normal text-muted">{{ r.p.party.description }}</div></td>
+            <td class="py-2.5 pr-4 w-48"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded bg-chip"><div class="h-1.5 rounded bg-brand" style="width: {{ (100 * r.p.billed_total / top) | round(1) if top else 0 }}%"></div></div><span class="tabular-nums">{{ r.p.billed_total | money }}</span></div></td>
+            <td class="py-2.5 pr-4">
+              {% if r.overdue %}<span class="text-bad font-semibold">Overdue: {{ r.overdue[0].name.split(" - ")[-1] | truncate(40) }}</span>
+              {% elif r.open %}<span class="text-warn font-semibold">Requested: {{ r.open[0].name.split(" - ")[-1] | truncate(40) }}</span>
+              {% elif r.p.records %}On file{% for d in r.p.records[:1] %}{{ ui.cite(d.source) }}{% endfor %}
+              {% else %}<span class="text-warn font-semibold">No records on file</span>{% endif %}</td>
+            <td class="py-2.5 pr-4">
+              {% if r.sent %}<span class="text-ok font-semibold">Shared {{ r.sent.approved_at | nice_date }} · {{ ("opened " ~ (r.sent.last_viewed | nice_date)) if r.sent.views else "not opened yet" }}</span>
+              {% else %}<span class="text-muted">Not shared</span>{% endif %}</td>
+            <td class="py-2.5 text-right"><a href="/m/{{ mid }}/share?provider={{ r.pid }}" class="font-semibold">{{ "Edit" if r.sent else "Share" }}</a></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </details>
 
-    {% if flags and flags["items"] | length > 5 %}
-    <details class="bg-white rounded-xl border border-line px-5 py-3">
-      <summary class="cursor-pointer text-sm font-medium">All red flags <span class="text-muted font-normal">· {{ flags["items"] | length }}</span></summary>
-      <ul class="mt-2 text-sm space-y-1">{% for f in flags["items"][5:] %}<li>{{ f.title }} {% for e in f.evidence %}{{ ui.cite(e.source) }}{% endfor %}</li>{% endfor %}</ul>
+    {% if flag_cards and flag_cards | length > 3 %}
+    <details id="all-flags" class="{{ card }} px-6 py-3.5">
+      <summary class="cursor-pointer flex items-baseline gap-3"><span class="text-[15px] font-bold">All red flags</span><span class="text-sm text-muted">{{ flag_cards | length }}</span></summary>
+      <ul class="mt-2 divide-y divide-hair">
+        {% for c in flag_cards %}
+        <li><button type="button" onclick="document.getElementById('flag-{{ loop.index }}').showModal()" class="w-full text-left py-2 flex items-center gap-2 text-[14px]">
+          <span class="h-2 w-2 shrink-0 rounded-full {{ {'high': 'bg-bad', 'medium': 'bg-warn'}.get(c.f.severity, 'bg-muted') }}"></span>
+          <span class="font-semibold">{{ c.short }}</span><span class="text-muted truncate">{{ c.sub }}</span></button></li>
+        {% endfor %}
+      </ul>
     </details>
     {% endif %}
 
-    <details class="bg-white rounded-xl border border-line px-5 py-3">
-      <summary class="cursor-pointer text-sm font-medium">Coming up <span class="text-muted font-normal">· next {{ events | length }} calendar entries</span></summary>
-      <ul class="mt-2 text-sm space-y-1">{% for e in events %}<li><span class="text-muted">{{ e.when | nice_date }}</span> · {{ ui.ref(e.source, e.title) }}</li>{% endfor %}</ul>
+    {% if do_next_rest %}
+    <details id="all-tasks" class="{{ card }} px-6 py-3.5">
+      <summary class="cursor-pointer flex items-baseline gap-3"><span class="text-[15px] font-bold">All open tasks</span><span class="text-sm text-muted">{{ do_next_rest | length + do_next | length }}</span></summary>
+      <ul class="mt-2 divide-y divide-hair text-[14px]">
+        {% for r in do_next_rest %}<li class="py-2 flex gap-3"><span class="text-muted w-28 shrink-0">{{ r.t.due | nice_date }}</span><span class="min-w-0">{{ ui.ref(r.t.source, r.label) }} <span class="text-muted">· {{ r.who }}</span></span></li>{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+
+    <details class="{{ card }} px-6 py-3.5">
+      <summary class="cursor-pointer flex items-baseline gap-3"><span class="text-[15px] font-bold">Full timeline</span><span class="text-sm text-muted">newest first, every dated record</span></summary>
+      <ul class="mt-2 text-[14px] divide-y divide-hair">
+        {% for e in timeline[:80] %}<li class="py-1.5 flex gap-3"><span class="text-muted w-24 shrink-0">{{ e.when | nice_date }}</span><span class="text-muted w-20 shrink-0">{{ e.kind }}</span><span class="min-w-0">{{ ui.ref(e.source, e.title | doc_label if e.kind == "document" else e.title) }}</span></li>{% endfor %}
+      </ul>
     </details>
   </div>
-</div>
-<style>[x-cloak]{display:none!important}</style>
+</main>
+
+{# Red-flag evidence: the two quotes side by side, each with its real source. #}
+{% for c in flag_cards or [] %}
+<dialog id="flag-{{ loop.index }}" class="rounded-card p-0 w-full max-w-3xl backdrop:bg-black/40">
+  <div class="flex items-start justify-between gap-4 border-b border-line px-6 py-4">
+    <div><p class="{{ lbl }}">{{ c.f.severity }} severity · {{ "contradiction" if c.f.kind == "contradiction" else "rule check" }}</p>
+      <p class="mt-1 text-[17px] font-bold">{{ c.f.title }}</p></div>
+    <button onclick="this.closest('dialog').close()" class="text-muted hover:text-ink text-lg" aria-label="Close">✕</button>
+  </div>
+  <div class="px-6 py-4 flex flex-col gap-4">
+    {% if c.f.evidence %}
+    <div class="grid gap-3 {{ 'sm:grid-cols-2' if c.f.evidence | length > 1 }}">
+      {% for e in c.f.evidence %}
+      <div class="border border-line rounded-[10px] p-4 flex flex-col gap-3">
+        <p class="{{ lbl }} normal-case tracking-normal text-[13px]">{{ (e.source.label | doc_label) or e.source.clio_type }}{% if e.page %}, p.{{ e.page }}{% endif %} says</p>
+        <blockquote class="text-[15px] leading-relaxed flex-1">“{{ e.quote }}”</blockquote>
+        <button hx-get="{{ e.source.url }}" hx-target="#source-body" class="self-start text-[13px] font-semibold text-brand hover:underline">Open source →</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if c.f.detail %}<p class="text-[14px] text-body"><strong class="text-ink">Why it matters.</strong> {{ c.f.detail }}</p>{% endif %}
+  </div>
+</dialog>
+{% endfor %}
+<style>[x-cloak]{display:none!important} details > summary::-webkit-details-marker{display:none} details > summary{list-style:none}</style>
 {% endblock %}
