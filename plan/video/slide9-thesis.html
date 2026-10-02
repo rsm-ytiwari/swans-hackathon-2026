@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slide 9 Thesis</title>
+<!-- Video beat 1: Swans' slide 9 verbatim (rendered from the briefing PDF), then the 14 quotes we answer, grouped
+     under the three problems we built for. 10 s. Click or press space to replay. ?t=8.5 freezes at that second.
+     render.py turns it into slide9-thesis.mp4 + stills. Quote groups match plan/video-script.md. -->
+<style>
+  :root {
+    --navy: #010034;
+    --ink: #ffffff;
+    --muted: #aab0d8;
+    --p1: #ffb547;  /* the case stalls */
+    --p2: #3ee6b0;  /* a fact nobody can check */
+    --p3: #ff7aa8;  /* a provider left in the dark */
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: var(--navy); overflow: hidden; }
+  body { font-family: "SF Pro Display", -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif; color: var(--ink); }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--navy); overflow: hidden; }
+
+  /* Slide layer: the real slide, everything inside uses slide pixel coordinates (1920x1080) */
+  #slide { position: absolute; inset: 0; width: 1920px; height: 1080px; background: url(slide9.png) 0 0 / 1920px 1080px;
+           transform-origin: 50% 0; animation: shrink 1s cubic-bezier(.4,0,.2,1) 1.4s both; }
+  @keyframes shrink { from { transform: scale(1); } to { transform: scale(.8); } }
+  #dim { position: absolute; inset: 0; background: rgba(1,0,52,.78); animation: fade .7s ease 1.5s both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  /* A bright cut-out of the slide itself, so highlighted quotes stay verbatim */
+  .cut { position: absolute; background-image: url(slide9.png); background-size: 1920px 1080px; border-radius: 0 10px 10px 0; }
+  .keep { animation: fade .7s ease 1.5s both; border-radius: 10px; }          /* title stays readable through the dim */
+  .q { opacity: 0; animation: pop .45s ease-out both; }
+  .q::before { content: ""; position: absolute; inset: 0; background: var(--c); opacity: .16; border-radius: inherit; }
+  .q::after { content: ""; position: absolute; left: -2px; top: 0; bottom: 0; width: 6px; border-radius: 3px; background: var(--c);
+              box-shadow: 0 0 18px var(--c); }
+  @keyframes pop { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+
+  .box { position: absolute; left: 1246px; top: 800px; width: 558px; height: 130px; border-radius: 26px; opacity: 0;
+         background-image: url(slide9.png); background-position: -1246px -800px; background-size: 1920px 1080px;
+         box-shadow: 0 0 0 3px #fff, 0 0 40px rgba(255,255,255,.35); animation: fade .6s ease 7.6s both; }
+  .chip { position: absolute; left: 1250px; top: 645px; width: 550px; opacity: 0; animation: rise .6s ease-out 7.8s both;
+          font-size: 50px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; }
+  .chip small { display: block; margin-top: 10px; font-size: 27px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+
+  /* The three problems, along the bottom once the slide shrinks */
+  .cards { position: absolute; left: 120px; right: 120px; top: 878px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+  .card { height: 182px; padding: 22px 26px; border-radius: 18px; background: rgba(255,255,255,.045);
+          border: 2px solid var(--c); display: grid; grid-template-columns: 52px 1fr; gap: 0 18px; align-content: start;
+          opacity: 0; animation: rise .55s cubic-bezier(.2,.8,.2,1) both; }
+  .card b { grid-row: span 2; width: 52px; height: 52px; border-radius: 50%; background: var(--c); color: var(--navy);
+            display: grid; place-items: center; font-size: 30px; font-weight: 800; }
+  .card h2 { font-size: 31px; line-height: 1.12; font-weight: 750; letter-spacing: -.01em; }
+  .card p { margin-top: 10px; font-size: 21px; line-height: 1.3; color: var(--muted); }
+  @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="slide">
+    <div id="dim"></div>
+    <div class="cut keep" style="left:110px;top:50px;width:1150px;height:90px;background-position:-110px -50px"></div>
+    <div class="cut keep" style="left:110px;top:170px;width:260px;height:38px;background-position:-110px -170px"></div>
+    <div class="cut keep" style="left:1240px;top:170px;width:370px;height:38px;background-position:-1240px -170px"></div>
+    <div class="box"></div>
+    <div class="chip">14 of 23 asks.<small>The ones that cost a firm money when they're missed. Built end to end.</small></div>
+  </div>
+  <div class="cards">
+    <div class="card" style="--c:var(--p1);animation-delay:2.5s"><b>1</b><h2>The case stalls, and nobody notices</h2>
+      <p>One screen: what's blocking it, who's late, what changed</p></div>
+    <div class="card" style="--c:var(--p2);animation-delay:4.2s"><b>2</b><h2>A fact nobody can check</h2>
+      <p>Every line opens the note, email or PDF behind it</p></div>
+    <div class="card" style="--c:var(--p3);animation-delay:5.8s"><b>3</b><h2>A provider left in the dark, or handed the whole file</h2>
+      <p>An attorney-approved page per provider</p></div>
+  </div>
+</div>
+<script>
+  // Quote positions come from the PDF text layer (points × 1920/720). [group, column, top pt, bottom pt]
+  const K = 1920 / 720, COLS = [[108, 645], [672, 1210], [1237, 1802]];
+  const QUOTES = [
+    [1, 0, 80, 115],  // Get me up to speed ... without me having to ask anyone
+    [1, 0, 119, 142], // What changed since I last opened this matter?
+    [1, 0, 147, 170], // Out of three hundred entries, show me the ten that matter
+    [1, 0, 175, 209], // Up to speed in two minutes / dig into everything
+    [1, 0, 324, 346], // When did anyone last actually talk to the client?
+    [1, 1, 108, 130], // What's overdue, what's coming, and what's waiting on someone else?
+    [2, 0, 214, 237], // If a date is on screen, I need to see where it came from
+    [2, 0, 242, 264], // Click on anything and open the note, document or email
+    [3, 1, 191, 213], // What did we share with this provider, and has anyone opened it?
+    [3, 1, 218, 241], // Treating doctors see where the case is without my whole file
+    [3, 1, 245, 268], // Let me adjust what the provider sees before I send it
+    [3, 1, 273, 295], // A secure way of sharing part of my case
+    [3, 2, 108, 130], // Is this case even still alive?
+    [3, 2, 191, 213], // What does the firm need from my office right now?
+  ];
+  const START = { 1: 2.6, 2: 4.3, 3: 5.9 }, seen = { 1: 0, 2: 0, 3: 0 };
+  const slide = document.getElementById("slide"), box = slide.querySelector(".box");
+  for (const [g, c, t, b] of QUOTES) {
+    const [x0, x1] = COLS[c], y0 = Math.round(t * K) - 3, y1 = Math.round(b * K) + 3;
+    const d = document.createElement("div");
+    d.className = "cut q";
+    d.style.cssText = `left:${x0}px;top:${y0}px;width:${x1 - x0}px;height:${y1 - y0}px;` +
+      `background-position:${-x0}px ${-y0}px;--c:var(--p${g});animation-delay:${START[g] + 0.07 * seen[g]++}s`;
+    slide.insertBefore(d, box);
+  }
+
+  const stage = document.getElementById("stage");
+  const fit = () => { const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    stage.style.transform = `translate(${(innerWidth - 1920 * s) / 2}px, ${(innerHeight - 1080 * s) / 2}px) scale(${s})`; };
+  addEventListener("resize", fit); fit();
+
+  // Seek: render.py and ?t= freeze every animation at one moment.
+  window.seek = (sec) => document.getAnimations().forEach(a => { a.pause(); a.currentTime = sec * 1000; });
+  const t = new URLSearchParams(location.search).get("t");
+  if (t !== null) seek(parseFloat(t));
+  const replay = () => document.getAnimations().forEach(a => { a.currentTime = 0; a.play(); });
+  addEventListener("click", replay);
+  addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); replay(); } });
+</script>
+</body>
+</html>
