@@ -70,8 +70,9 @@ def _blocker(overdue):
     if not overdue:
         return None
     worst = min(overdue, key=lambda x: (x.waiting_on is None, x.days_from_today))
-    return {"task": worst, "label": _short_task(worst.name, worst.waiting_on), "who": _who(worst),
-            "blocked": bool(worst.waiting_on), "days": -worst.days_from_today}
+    who = _who(worst)
+    return {"task": worst, "label": _short_task(worst.name, worst.waiting_on), "who": who,
+            "blocked": who != "Our team", "days": -worst.days_from_today}
 
 
 def _flag_view(f) -> dict:
@@ -97,7 +98,11 @@ def _money_view(money) -> dict:
         caption = "Coverage is above the estimated value."
     else:
         caption = None
-    return {**b, "billed": billed or None, "liens": liens or None, "billed_pct": pct(billed), "liens_pct": pct(liens),
+    # Say exactly which Clio field is empty, instead of a dash (config.FIELDS names the field per firm).
+    missing = [config.FIELDS[k] for k, v in (("case_value", value), ("policy_limits", cov), ("liens", liens)) if not v]
+    if not billed:
+        missing.append("provider charges")
+    return {**b, "billed": billed or None, "liens": liens or None, "missing": missing, "billed_pct": pct(billed), "liens_pct": pct(liens),
             "cov_pct": pct(cov), "value_pct": pct(value), "caption": caption,
             "assumption": config.COVERAGE_ASSUMPTION if cov else ""}
 
@@ -119,8 +124,6 @@ def _provider_rows(con, mid: int, t: date) -> list[dict]:
     app_con = sharing.connect()
     rows = []
     for p in facts.providers(con, mid, t):
-        if not (p.charges or p.records or p.bills):
-            continue
         sent = sharing.publications_for(app_con, mid, p.party.contact_id)
         overdue = [r for r in p.requests if r.days_from_today is not None and r.days_from_today < 0]
         rows.append({"p": p, "pid": p.party.contact_id, "sent": sent[0] if sent else None,

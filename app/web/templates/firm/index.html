@@ -33,7 +33,7 @@
       <h1 class="text-[30px] sm:text-[34px] leading-none font-extrabold tracking-[-0.02em]">{{ ui.ref(client.source if client else None, m.client_name) }}</h1>
       <p class="text-[16px] leading-snug text-body">
         {{ (summary.value | string).split(". ")[0].rstrip(".") if summary.value and story and story.injuries else (summary.value or m.description) }}
-        · <strong class="text-ink">{{ incident_date.value | nice_date }}</strong>{{ ui.cite(summary.source or incident_date.source) }}</p>
+        · {% if incident_date.value %}<strong class="text-ink">{{ incident_date.value | nice_date }}</strong>{% else %}<span class="text-warn">incident date not in Clio</span>{% endif %}{{ ui.cite(summary.source or incident_date.source) }}</p>
       {% if story and story.injuries %}
       <div class="flex flex-wrap gap-2">
         {% for i in story.injuries %}<span class="text-[13px] font-semibold px-2.5 py-1 rounded-full bg-chip">{{ i }}</span>{% endfor %}
@@ -43,10 +43,10 @@
     <dl class="flex-[1_1_380px] grid grid-cols-2 gap-x-6 gap-y-2.5">
       <div><dt class="{{ lbl }}">Open</dt><dd class="mt-0.5 text-[19px] font-bold">{{ case_age or "—" }}</dd></div>
       <div><dt class="{{ lbl }}">Last talked to client</dt><dd class="mt-0.5 text-[19px] font-bold">
-        {% if last_client_contact %}{% set d = (today - last_client_contact.when).days %}{{ ui.ref(last_client_contact.source, "today" if d == 0 else (d ~ " day" ~ ("" if d == 1 else "s") ~ " ago")) }}{% else %}—{% endif %}</dd></div>
-      <div><dt class="{{ lbl }}">Attorney</dt><dd class="mt-0.5 text-[15px] font-semibold">{{ m.responsible_attorney or "—" }}</dd></div>
+        {% if last_client_contact %}{% set d = (today - last_client_contact.when).days %}{{ ui.ref(last_client_contact.source, "today" if d == 0 else (d ~ " day" ~ ("" if d == 1 else "s") ~ " ago")) }}{% else %}<span class="text-[14px] text-warn">no call or email in Clio</span>{% endif %}</dd></div>
+      <div><dt class="{{ lbl }}">Attorney</dt><dd class="mt-0.5 text-[15px] font-semibold">{{ m.responsible_attorney or "Not set in Clio" }}</dd></div>
       <div class="min-w-0"><dt class="{{ lbl }}">Next date</dt><dd class="mt-0.5 text-[15px] font-semibold truncate" title="{{ next_date.title if next_date }}">
-        {% if next_date %}{{ ui.ref(next_date.source, next_date.when | jdate ~ " · " ~ next_date.title) }}{% else %}—{% endif %}</dd></div>
+        {% if next_date %}{{ ui.ref(next_date.source, next_date.when | jdate ~ " · " ~ next_date.title) }}{% else %}<span class="text-muted font-normal">nothing on the calendar</span>{% endif %}</dd></div>
     </dl>
   </section>
 
@@ -82,7 +82,7 @@
     <div class="flex gap-3.5 items-center bg-badbg rounded-[10px] px-4 py-2.5 flex-wrap">
       <span class="text-[12px] font-extrabold text-white bg-bad rounded-md px-2 py-1">{{ "BLOCKED" if blocker.blocked else "OVERDUE" }}</span>
       <p class="flex-[1_1_380px] text-[16px] font-bold text-ink">
-        {% if blocker.blocked %}Waiting on {{ blocker.who }}: {{ blocker.label[:1].lower() ~ blocker.label[1:] }}{% else %}{{ blocker.label }} ({{ blocker.who | lower }}){% endif %}, {{ blocker.days }} day{{ "" if blocker.days == 1 else "s" }} overdue.{{ ui.cite(blocker.task.source) }}</p>
+        {% if blocker.blocked %}Waiting on {{ blocker.who }}: {{ blocker.label[:1].lower() ~ blocker.label[1:] }}{% else %}Our team: {{ blocker.label[:1].lower() ~ blocker.label[1:] }}{% endif %}, {{ blocker.days }} day{{ "" if blocker.days == 1 else "s" }} overdue.{{ ui.cite(blocker.task.source) }}</p>
     </div>
     {% endif %}
   </section>
@@ -152,9 +152,9 @@
       <section class="{{ card }} px-5 py-3.5 flex flex-col gap-2.5">
         <div class="flex justify-between items-baseline gap-3 flex-wrap">
           <p class="{{ lbl }}">Worth vs. what can pay</p>
-          <p class="text-[13px] text-muted">Est. value <span class="text-[22px] font-extrabold text-ink ml-1">{{ ui.ref(money.case_value.source, mv.value | money) }}</span></p>
+          <p class="text-[13px] text-muted">Est. value <span class="text-[22px] font-extrabold text-ink ml-1">{% if mv.value %}{{ ui.ref(money.case_value.source, mv.value | money) }}{% else %}<span class="text-[14px] font-semibold text-warn">not in Clio</span>{% endif %}</span></p>
         </div>
-        {% if mv.value or mv.billed %}
+        {% if mv.value or mv.billed or mv.reachable %}
         <div class="relative pt-1">
           <div class="h-7 rounded-lg bg-chip overflow-hidden flex">
             <div class="bg-brand" style="width: {{ mv.billed_pct }}%"></div>
@@ -164,17 +164,18 @@
         </div>
         <div class="grid grid-cols-3 gap-3 text-[13px]">
           <div><span class="inline-block w-2.5 h-2.5 rounded-sm bg-brand"></span> Medical billed<br>
-            <strong class="text-[16px]">{{ mv.billed | money }}</strong>
-            {% if money.specials_mismatch %}<span class="block text-bad font-semibold">≠ specials field</span>{% else %}<span class="text-ok text-[12px]">✓ specials</span>{% endif %}</div>
+            {% if mv.billed %}<strong class="text-[16px]">{{ mv.billed | money }}</strong>{% else %}<span class="block text-warn font-semibold">no charges in Clio</span>{% endif %}
+            {% if mv.billed %}{% if money.specials_mismatch %}<span class="block text-bad font-semibold">≠ specials field</span>{% else %}<span class="text-ok text-[12px]">✓ specials</span>{% endif %}{% endif %}</div>
           <div><span class="inline-block w-2.5 h-2.5 rounded-sm bg-[#8D84EE]"></span> Liens<br>
-            <strong class="text-[16px]">{{ ui.ref(money.liens.source, mv.liens | money) if mv.liens else "—" }}</strong></div>
+            {% if mv.liens %}<strong class="text-[16px]">{{ ui.ref(money.liens.source, mv.liens | money) }}</strong>{% else %}<span class="block text-muted">none recorded</span>{% endif %}</div>
           <div><span class="inline-block w-2.5 h-[2px] bg-bad align-middle"></span> Coverage<br>
-            <strong class="text-[16px] text-bad">{{ ui.ref(money.policy_limits.source, mv.reachable | money) if mv.reachable else "—" }}</strong>
+            {% if mv.reachable %}<strong class="text-[16px] text-bad">{{ ui.ref(money.policy_limits.source, mv.reachable | money) }}</strong>{% else %}<span class="block text-warn font-semibold">not in Clio</span>{% endif %}
 </div>
         </div>
         {% if mv.caption or mv.assumption %}<p class="text-[13px] text-muted leading-snug">{{ mv.caption or "" }}
           {% if mv.assumption %}<span class="font-semibold text-warn">Coverage is {{ mv.assumption }}.</span>{% endif %}</p>{% endif %}
-        {% else %}<p class="text-sm text-muted">No value or bills recorded yet.</p>{% endif %}
+        {% else %}<p class="text-sm text-muted">Nothing to compare yet.</p>{% endif %}
+        {% if mv.missing %}<p class="text-[12.5px] text-muted">Can’t tell from Clio: {{ mv.missing | join(", ") }} {{ "is" if mv.missing | length == 1 else "are" }} empty on this matter.</p>{% endif %}
       </section>
     </aside>
   </div>
@@ -213,12 +214,12 @@
           {% for r in providers %}
           <tr class="border-b border-hair align-top">
             <td class="py-2.5 pr-4 font-semibold">{{ ui.ref(r.p.party.source, r.p.party.name) }}<div class="text-[12.5px] font-normal text-muted">{{ r.p.party.description }}</div></td>
-            <td class="py-2.5 pr-4 w-48"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded bg-chip"><div class="h-1.5 rounded bg-brand" style="width: {{ (100 * r.p.billed_total / top) | round(1) if top else 0 }}%"></div></div><span class="tabular-nums">{{ r.p.billed_total | money }}</span></div></td>
+            <td class="py-2.5 pr-4 w-48"><div class="flex items-center gap-2"><div class="h-1.5 flex-1 rounded bg-chip"><div class="h-1.5 rounded bg-brand" style="width: {{ (100 * r.p.billed_total / top) | round(1) if top else 0 }}%"></div></div><span class="tabular-nums">{{ r.p.billed_total | money if r.p.billed_total else "no charges" }}</span></div></td>
             <td class="py-2.5 pr-4">
               {% if r.overdue %}<span class="text-bad font-semibold">Overdue: {{ r.overdue[0].name.split(" - ")[-1] | truncate(40) }}</span>
               {% elif r.open %}<span class="text-warn font-semibold">Requested: {{ r.open[0].name.split(" - ")[-1] | truncate(40) }}</span>
               {% elif r.p.records %}On file{% for d in r.p.records[:1] %}{{ ui.cite(d.source) }}{% endfor %}
-              {% else %}<span class="text-warn font-semibold">No records on file</span>{% endif %}</td>
+              {% else %}<span class="text-warn font-semibold">No records in Clio yet</span>{% endif %}</td>
             <td class="py-2.5 pr-4">
               {% if r.sent %}<span class="text-ok font-semibold">Shared {{ r.sent.approved_at | nice_date }} · {{ ("opened " ~ (r.sent.last_viewed | nice_date)) if r.sent.views else "not opened yet" }}</span>
               {% else %}<span class="text-muted">Not shared</span>{% endif %}</td>

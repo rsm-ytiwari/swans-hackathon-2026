@@ -66,13 +66,12 @@ def console(request: Request, mid: int, provider: int | None = None):
         raise HTTPException(404, "matter not found")
     rows = []
     for p in facts.providers(con, mid, t):
-        if not (p.charges or p.records or p.bills or p.requests):
-            continue  # an individual clinician with nothing of their own on file
         pid = p.party.contact_id
         sent = sharing.publications_for(app_con, mid, pid)
         rows.append({"p": p, "pid": pid, "sent": sent, "views": sum(s["views"] for s in sent),
                      "last_sent": sent[0]["approved_at"] if sent else None})
-    rows.sort(key=lambda r: not r["p"].requests)  # open requests first (stable otherwise)
+    # Open requests first, then by amount billed; providers with nothing on file yet stay pickable at the end.
+    rows.sort(key=lambda r: (not r["p"].requests, -r["p"].billed_total))
     selected = next((r for r in rows if r["pid"] == provider), rows[0] if rows else None)
     ctx = {"mid": mid, "m": facts.matter(con, mid), "rows": rows, "selected": selected,
            "sections": sharing.SECTIONS, "never": sharing.NEVER_SHARED}

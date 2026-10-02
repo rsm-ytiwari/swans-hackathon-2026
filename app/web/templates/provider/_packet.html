@@ -38,7 +38,7 @@
       {% for s in stages %}
       <li class="flex-1 min-w-0">
         <div class="h-2 rounded {{ 'bg-teal' if cur is not none and loop.index0 <= cur else 'bg-[#D3DCDA]' }}"></div>
-        <div class="hidden min-[500px]:block mt-1.5 text-[11px] tracking-tight leading-tight {{ 'text-ink font-bold' if loop.index0 == cur else 'text-muted' }}">{{ s }}</div>
+        <div class="hidden min-[500px]:block mt-1.5 text-[11px] tracking-tight leading-tight truncate pr-0.5 {{ 'text-ink font-bold' if loop.index0 == cur else 'text-muted' }}">{{ s }}</div>
       </li>
       {% endfor %}
     </ol>
@@ -80,17 +80,22 @@
   {% if pkt.bills %}
   <section class="rounded-card border border-line bg-white p-5 sm:p-6">
     {{ lbl("Your bills on file") }}
+    {% if pkt.bills.total or pkt.bills.documents %}
     <div class="mt-2 text-3xl font-extrabold text-ink">{{ pkt.bills.total | money }}</div>
     <p class="text-sm text-muted">billed, to be paid from the settlement</p>
+    {% else %}
+    <p class="mt-2 text-[15px] text-body">No bills from your office are on file with the firm yet. Please send an itemized bill when you can.</p>
+    {% endif %}
     {% if pkt.bills.documents %}<ul class="mt-3">{% for d in pkt.bills.documents %}{{ doc_row(d, token) }}{% endfor %}</ul>{% endif %}
   </section>
   {% else %}{{ placeholder("own_bills") }}{% endif %}
 
   {# 4. Records we have from you #}
-  {% if pkt.records %}
+  {% if pkt.records is not none %}
   <section class="rounded-card border border-line bg-white p-5 sm:p-6">
     {{ lbl("Records we have from you") }}
-    <ul class="mt-2">{% for d in pkt.records %}{{ doc_row(d, token) }}{% endfor %}</ul>
+    {% if pkt.records %}<ul class="mt-2">{% for d in pkt.records %}{{ doc_row(d, token) }}{% endfor %}</ul>
+    {% else %}<p class="mt-2 text-[15px] text-body">No records from your office are on file with the firm yet.</p>{% endif %}
   </section>
   {% else %}{{ placeholder("own_records") }}{% endif %}
 

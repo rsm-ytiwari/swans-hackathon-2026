@@ -1,0 +1,461 @@
+{
+ "about": {
+  "what": "SYNTHETIC test case (fictional people and events) to check the app on data other than Sapini. Fields left out on purpose: Estimated Case Value, Health Insurance or Lien Holder, Prior Related Injuries, Policy Limits Confirmed."
+ },
+ "matter_stages": {
+  "stages_in_order": [
+   "Intake",
+   "Treatment",
+   "Demand",
+   "Negotiation",
+   "Litigation",
+   "Trial",
+   "Disbursement",
+   "Closed"
+  ]
+ },
+ "custom_fields": {
+  "endpoint": "POST /custom_fields.json",
+  "items": [
+   {
+    "body": {
+     "name": "Date of Incident",
+     "parent_type": "Matter",
+     "field_type": "date",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Accident Location",
+     "parent_type": "Matter",
+     "field_type": "text_line",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Case Summary",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Insurance Carrier",
+     "parent_type": "Matter",
+     "field_type": "text_line",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Claim Number",
+     "parent_type": "Matter",
+     "field_type": "text_line",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Policy Limits",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Policy Limits Confirmed",
+     "parent_type": "Matter",
+     "field_type": "checkbox",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Estimated Case Value",
+     "parent_type": "Matter",
+     "field_type": "currency",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Case Value Rationale",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Medical Specials To Date",
+     "parent_type": "Matter",
+     "field_type": "currency",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Wage Loss Claimed",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Liability Assessment",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Treatment Status",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Health Insurance or Lien Holder",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "Prior Related Injuries",
+     "parent_type": "Matter",
+     "field_type": "text_area",
+     "displayed": true
+    }
+   },
+   {
+    "body": {
+     "name": "HIPAA Authorization Received",
+     "parent_type": "Matter",
+     "field_type": "checkbox",
+     "displayed": true
+    }
+   }
+  ]
+ },
+ "contacts": {
+  "items": [
+   {
+    "ref": "client",
+    "body": {
+     "type": "Person",
+     "first_name": "Maria",
+     "last_name": "Okafor"
+    }
+   },
+   {
+    "ref": "driver",
+    "body": {
+     "type": "Person",
+     "first_name": "Dale",
+     "last_name": "Brenner"
+    }
+   },
+   {
+    "ref": "carrier",
+    "body": {
+     "type": "Company",
+     "name": "Granite State Mutual Insurance"
+    }
+   },
+   {
+    "ref": "urgent",
+    "body": {
+     "type": "Company",
+     "name": "Harborview Urgent Care"
+    }
+   },
+   {
+    "ref": "pt",
+    "body": {
+     "type": "Company",
+     "name": "Lakeside Physical Therapy Group"
+    }
+   }
+  ]
+ },
+ "matter": {
+  "body": {
+   "client": {
+    "id": "{{contact:client}}"
+   },
+   "description": "Okafor, Maria \u2014 rear-end collision (Route 9, Peekskill) [SYNTHETIC]",
+   "status": "Open",
+   "open_date": "2025-11-10",
+   "matter_stage": {
+    "id": "{{stage:Treatment}}"
+   },
+   "custom_field_values": [
+    {
+     "custom_field": {
+      "id": "{{field:Date of Incident}}"
+     },
+     "value": "2025-11-03"
+    },
+    {
+     "custom_field": {
+      "id": "{{field:Accident Location}}"
+     },
+     "value": "Route 9 northbound, Peekskill, NY"
+    },
+    {
+     "custom_field": {
+      "id": "{{field:Case Summary}}"
+     },
+     "value": "Rear-ended at a red light on Route 9. Neck and lower back pain; right wrist sprain."
+    },
+    {
+     "custom_field": {
+      "id": "{{field:Insurance Carrier}}"
+     },
+     "value": "Granite State Mutual Insurance"
+    },
+    {
+     "custom_field": {
+      "id": "{{field:Policy Limits}}"
+     },
+     "value": "$25,000 / $50,000"
+    },
+    {
+     "custom_field": {
+      "id": "{{field:Medical Specials To Date}}"
+     },
+     "value": "7400"
+    },
+    {
+     "custom_field": {
+      "id": "{{field:Treatment Status}}"
+     },
+     "value": "In physical therapy twice a week"
+    }
+   ]
+  }
+ },
+ "relationships": {
+  "items": [
+   {
+    "body": {
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "contact": {
+      "id": "{{contact:driver}}"
+     },
+     "description": "Adverse driver"
+    }
+   },
+   {
+    "body": {
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "contact": {
+      "id": "{{contact:carrier}}"
+     },
+     "description": "Insurance carrier for adverse driver"
+    }
+   },
+   {
+    "body": {
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "contact": {
+      "id": "{{contact:urgent}}"
+     },
+     "description": "Medical provider: urgent care, day of incident"
+    }
+   },
+   {
+    "body": {
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "contact": {
+      "id": "{{contact:pt}}"
+     },
+     "description": "Treating provider, physical therapy"
+    }
+   }
+  ]
+ },
+ "notes": {
+  "items": [
+   {
+    "body": {
+     "type": "Matter",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "date": "2025-11-10",
+     "subject": "Intake summary",
+     "detail": "Met Maria Okafor. Stopped at a red light on Route 9 when a pickup driven by Dale Brenner struck her from behind. Went to Harborview Urgent Care the same evening. Neck and lower back pain, right wrist sprain. She denies any prior neck problems or treatment."
+    }
+   },
+   {
+    "body": {
+     "type": "Matter",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "date": "2026-01-15",
+     "subject": "Liability note",
+     "detail": "Police report puts the adverse driver at fault; he was cited for following too closely. Liability looks clear."
+    }
+   },
+   {
+    "body": {
+     "type": "Matter",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "date": "2026-06-02",
+     "subject": "Records review: primary care",
+     "detail": "Primary care chart received. It records a neck strain in March 2022 treated with six chiropractic visits. This conflicts with her intake statement."
+    }
+   },
+   {
+    "body": {
+     "type": "Matter",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "date": "2026-09-10",
+     "subject": "Treatment update",
+     "detail": "Lakeside Physical Therapy reports steady improvement. Expect discharge in about six weeks, then we can prepare the demand."
+    }
+   }
+  ]
+ },
+ "communications": {
+  "items": [
+   {
+    "body": {
+     "type": "PhoneCommunication",
+     "date": "2026-09-15",
+     "subject": "Client call: wrist still sore",
+     "body": "Maria called. Wrist still sore when lifting. Reminded her to bring the HIPAA form for her primary care doctor.",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "senders": [
+      {
+       "id": "{{contact:client}}",
+       "type": "Contact"
+      }
+     ],
+     "receivers": [
+      {
+       "id": "{{user_id}}",
+       "type": "User"
+      }
+     ]
+    }
+   },
+   {
+    "body": {
+     "type": "EmailCommunication",
+     "date": "2026-09-20",
+     "subject": "Treatment notes request",
+     "body": "Please send the daily treatment notes and the itemised bill to date for Maria Okafor.",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "senders": [
+      {
+       "id": "{{user_id}}",
+       "type": "User"
+      }
+     ],
+     "receivers": [
+      {
+       "id": "{{contact:pt}}",
+       "type": "Contact"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "tasks": {
+  "items": [
+   {
+    "body": {
+     "name": "Get signed HIPAA authorization for primary care from client",
+     "description": "Client to bring the signed form.",
+     "due_at": "2026-09-22",
+     "status": "pending",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "assignee": {
+      "id": "{{user_id}}",
+      "type": "User"
+     }
+    }
+   },
+   {
+    "body": {
+     "name": "By medical provider: Lakeside Physical Therapy Group - Daily notes and itemised bill to date",
+     "description": "Requested by email Sep 20.",
+     "due_at": "2026-10-09",
+     "status": "pending",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "assignee": {
+      "id": "{{user_id}}",
+      "type": "User"
+     }
+    }
+   },
+   {
+    "body": {
+     "name": "Order police report",
+     "description": "Done.",
+     "due_at": "2026-01-10",
+     "status": "complete",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "assignee": {
+      "id": "{{user_id}}",
+      "type": "User"
+     }
+    }
+   }
+  ]
+ },
+ "calendar_entries": {
+  "items": [
+   {
+    "body": {
+     "summary": "PT re-evaluation, Maria Okafor",
+     "description": "Lakeside PT re-evaluation.",
+     "start_at": "2026-10-20T15:00:00Z",
+     "end_at": "2026-10-20T16:00:00Z",
+     "matter": {
+      "id": "{{matter_id}}"
+     },
+     "calendar_owner": {
+      "id": "{{calendar_id}}"
+     }
+    }
+   }
+  ]
+ }
+}
