@@ -19,6 +19,19 @@
 {% endif %}
 {% endmacro %}
 
+{# Quiet citation: a small ↗ after a sentence. Use when the text itself isn't a single value. #}
+{% macro cite(src) %}
+{% if src %}<button hx-get="{{ src.url }}" hx-target="#source-body" title="Open the source record"
+  class="text-[11px] text-muted hover:text-brand align-super ml-0.5">↗</button>{% endif %}
+{% endmacro %}
+
+{# A value that opens its source when clicked (dotted underline instead of a chip). #}
+{% macro ref(src, text) %}
+{% if src %}<button hx-get="{{ src.url }}" hx-target="#source-body" title="Open the source record"
+  class="text-left underline decoration-dotted decoration-slate-300 underline-offset-4 hover:decoration-brand hover:text-brand">{{ text }}</button>
+{% else %}{{ text }}{% endif %}
+{% endmacro %}
+
 {% macro pill(text, tone="neutral") %}
 {% set tones = {"neutral": "bg-slate-100 text-slate-700", "ok": "bg-green-50 text-ok", "warn": "bg-amber-50 text-warn",
                 "bad": "bg-red-50 text-bad", "brand": "bg-blue-50 text-brand"} %}

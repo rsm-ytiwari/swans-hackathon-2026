@@ -1,60 +1,136 @@
 {% extends "base.html" %}
 {% import "components/ui.html" as ui %}
-{% block title %}{{ m.display_number }} · firm view{% endblock %}
+{% block title %}{{ m.client_name }} · case brief{% endblock %}
 {% block body %}
-{# Thin version (walking skeleton). Layout and blocks get replaced from plan/ui-spec.md. #}
-<header class="bg-white border-b border-line">
-  <div class="max-w-7xl mx-auto px-6 py-4 flex items-start justify-between gap-6">
-    <div>
-      <div class="text-xs text-muted">{{ m.display_number }} · {{ m.practice_area }}</div>
-      <h1 class="text-2xl font-semibold">{{ m.client_name }} {{ ui.source(client.source if client else None, "contact") }}</h1>
-      <p class="text-sm text-muted mt-1">{{ summary.value }} {{ ui.source(summary.source) }}</p>
+{# First screen budget (plan/v1.md): 5 blocks, ~180 words, no scrolling at 1440×900. Answers, not counts. #}
+<div class="max-w-5xl mx-auto px-6 py-6 space-y-5">
+
+  {# 1. Header: who, what happened, where it stands, when we last spoke to the client #}
+  <header class="flex items-start justify-between gap-6">
+    <div class="min-w-0">
+      <h1 class="text-2xl font-semibold">{{ ui.ref(client.source if client else None, m.client_name) }}</h1>
+      <p class="text-sm text-muted mt-0.5">
+        {{ ui.ref(incident_date.source, incident_date.value | nice_date) }} · {{ summary.value }}{{ ui.cite(summary.source) }}
+      </p>
+      <p class="text-sm mt-1">
+        <span class="font-medium">{{ m.stage_name }}</span>
+        <span class="text-muted">· stage {{ (stage_index or 0) + 1 }} of {{ stages | length }} · open since {{ m.open_date | nice_date }}</span>
+        {% if last_client_contact %}
+        <span class="text-muted">· last spoke to client</span>
+        {{ ui.ref(last_client_contact.source, (today - last_client_contact.when).days ~ " days ago") }}
+        {% endif %}
+      </p>
     </div>
-    <a href="/m/{{ mid }}/share" class="shrink-0 rounded-lg border border-line px-3 py-2 text-sm hover:border-brand">Provider sharing →</a>
+    <a href="/m/{{ mid }}/share" class="shrink-0 rounded-lg border border-line bg-white px-3 py-2 text-sm hover:border-brand">Share with a provider →</a>
+  </header>
+
+  {# 2. Bottom line: three sentences, each cited #}
+  <section class="bg-white rounded-xl border border-line p-5">
+    <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Bottom line</h2>
+    {% if bottom_line %}
+    <ol class="mt-2 space-y-1.5 text-[15px] leading-snug">
+      {% for s in bottom_line %}<li>{{ s.text }}{% for src in s.sources %}{{ ui.cite(src) }}{% endfor %}</li>{% endfor %}
+    </ol>
+    {% else %}
+    <p class="mt-2 text-sm text-muted">AI is off (no provider available). Everything else on this page is computed directly from Clio.</p>
+    {% endif %}
+  </section>
+
+  <div class="grid lg:grid-cols-5 gap-5">
+    {# 3. Do next: overdue first, max 5 rows #}
+    <section class="lg:col-span-3 bg-white rounded-xl border border-line p-5">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Do next</h2>
+      <ul class="mt-2">
+        {% for t, label in do_next %}
+        <li class="flex items-start justify-between gap-3 py-1.5">
+          <div class="text-sm min-w-0">{{ ui.ref(t.source, label) }}
+            {% if t.waiting_on %}<span class="text-xs text-muted"> · waiting on {{ t.waiting_on }}</span>{% endif %}</div>
+          {{ ui.pill(t.days_from_today | relative, "bad" if t.days_from_today < 0 else "neutral") }}
+        </li>
+        {% else %}<li class="text-sm text-muted">Nothing open.</li>{% endfor %}
+      </ul>
+      {% if do_next_more %}<p class="text-xs text-muted mt-1">+ {{ do_next_more }} later</p>{% endif %}
+    </section>
+
+    {# 4. Worth vs coverage: four numbers #}
+    <section class="lg:col-span-2 bg-white rounded-xl border border-line p-5">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Worth vs coverage</h2>
+      <dl class="mt-2 space-y-2 text-sm">
+        <div class="flex justify-between gap-3"><dt class="text-muted">Estimated value</dt>
+          <dd class="font-semibold">{{ ui.ref(money.case_value.source, money.case_value.value | money) }}</dd></div>
+        <div class="flex justify-between gap-3"><dt class="text-muted shrink-0">Coverage</dt>
+          <dd class="text-right">{{ ui.ref(money.policy_limits.source, coverage_line or "—") }}</dd></div>
+        <div class="flex justify-between gap-3"><dt class="text-muted">Medical billed</dt>
+          <dd class="font-semibold">{{ money.provider_billed_total | money }}
+            {% if money.specials_mismatch %}{{ ui.pill("≠ specials field", "bad") }}{% else %}<span class="text-ok text-xs font-normal">✓ matches specials</span>{% endif %}</dd></div>
+        <div class="flex justify-between gap-3"><dt class="text-muted shrink-0">Liens</dt>
+          <dd class="text-right">{{ ui.ref(money.liens.source, liens_line or "—") }}</dd></div>
+      </dl>
+    </section>
   </div>
-  <div class="max-w-7xl mx-auto px-6 pb-4">{{ ui.stage_bar(stages, stages.index(m.stage_name) if m.stage_name in stages else none) }}</div>
-</header>
 
-<main class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
-  {% call ui.card("Key facts") %}
-  <div class="grid grid-cols-2 gap-4">
-    {{ ui.stat("Incident", incident_date.value | nice_date, src=incident_date.source) }}
-    {{ ui.stat("Case opened", m.open_date | nice_date) }}
-    {{ ui.stat("Last talked to client", last_client_contact.when | nice_date if last_client_contact else "—",
-               last_client_contact.title if last_client_contact else None, last_client_contact.source if last_client_contact else None) }}
-    {{ ui.stat("Treating providers", providers | length) }}
+  {# 5. Red flags: one line each, click for the evidence #}
+  <section class="bg-white rounded-xl border border-line p-5" x-data="{ open: null }">
+    <div class="flex items-baseline justify-between">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-muted">Red flags</h2>
+      {% if flags %}<span class="text-[11px] text-muted">contradiction check: {{ flags.ai }}</span>{% endif %}
+    </div>
+    {% if flags and flags["items"] %}
+    <ul class="mt-2 divide-y divide-line">
+      {% for f in flags["items"][:5] %}
+      <li class="py-1.5">
+        <button class="w-full flex items-center gap-2 text-left text-sm" @click="open = open === {{ loop.index }} ? null : {{ loop.index }}">
+          <span class="h-2 w-2 shrink-0 rounded-full {{ {'high': 'bg-bad', 'medium': 'bg-warn', 'low': 'bg-slate-300'}[f.severity] }}"></span>
+          <span class="min-w-0 flex-1">{{ f.title }}</span>
+          <span class="text-[11px] text-muted">{{ "contradiction" if f.kind == "contradiction" else "check" }}</span>
+        </button>
+        <div x-show="open === {{ loop.index }}" x-cloak class="mt-2 ml-4 text-sm text-muted space-y-1.5">
+          <p>{{ f.detail }}</p>
+          {% for e in f.evidence %}
+          <blockquote class="border-l-2 border-line pl-3">“{{ e.quote }}” {{ ui.ref(e.source, (e.source.label or e.source.clio_type) ~ (" p." ~ e.page if e.page else "")) }}</blockquote>
+          {% endfor %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if flags["items"] | length > 5 %}<p class="text-xs text-muted mt-1">+ {{ flags["items"] | length - 5 }} more below</p>{% endif %}
+    {% else %}<p class="mt-2 text-sm text-muted">No red flags found.</p>{% endif %}
+  </section>
+
+  {# ---------- Second layer: on demand ---------- #}
+  <div class="space-y-2 pt-2">
+    <details class="bg-white rounded-xl border border-line px-5 py-3">
+      <summary class="cursor-pointer text-sm font-medium">Since you last looked
+        <span class="text-muted font-normal">· {{ changes | length }} items since {{ since | nice_date }}</span></summary>
+      <form class="mt-2 text-xs text-muted">Last looked on <input type="date" name="since" value="{{ since.isoformat() }}" class="border border-line rounded px-1" onchange="this.form.submit()"></form>
+      <ul class="mt-2 text-sm space-y-1">
+        {% for e in changes[:20] %}<li><span class="text-muted">{{ e.when | nice_date }} · {{ e.kind }}</span> · {{ ui.ref(e.source, e.title) }}</li>{% endfor %}
+      </ul>
+    </details>
+
+    <details class="bg-white rounded-xl border border-line px-5 py-3">
+      <summary class="cursor-pointer text-sm font-medium">Providers & bills <span class="text-muted font-normal">· {{ providers | length }} billing providers</span></summary>
+      <table class="mt-2 w-full text-sm"><tbody>
+        {% for p in providers %}
+        <tr class="border-t border-line"><td class="py-1.5">{{ p.party.name }}</td>
+          <td class="text-muted">{% for d in p.records %}{{ ui.ref(d.source, "records") }} {% endfor %}{% for d in p.bills %}{{ ui.ref(d.source, "bill") }}{% endfor %}</td>
+          <td class="text-right font-medium">{{ p.billed_total | money }}</td></tr>
+        {% endfor %}
+      </tbody></table>
+    </details>
+
+    {% if flags and flags["items"] | length > 5 %}
+    <details class="bg-white rounded-xl border border-line px-5 py-3">
+      <summary class="cursor-pointer text-sm font-medium">All red flags <span class="text-muted font-normal">· {{ flags["items"] | length }}</span></summary>
+      <ul class="mt-2 text-sm space-y-1">{% for f in flags["items"][5:] %}<li>{{ f.title }} {% for e in f.evidence %}{{ ui.cite(e.source) }}{% endfor %}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+
+    <details class="bg-white rounded-xl border border-line px-5 py-3">
+      <summary class="cursor-pointer text-sm font-medium">Coming up <span class="text-muted font-normal">· next {{ events | length }} calendar entries</span></summary>
+      <ul class="mt-2 text-sm space-y-1">{% for e in events %}<li><span class="text-muted">{{ e.when | nice_date }}</span> · {{ ui.ref(e.source, e.title) }}</li>{% endfor %}</ul>
+    </details>
   </div>
-  {% endcall %}
-
-  {% call ui.card("Money") %}
-  <div class="grid grid-cols-2 gap-4">
-    {{ ui.stat("Estimated value", money.case_value.value | money, src=money.case_value.source) }}
-    {{ ui.stat("Medical bills", money.provider_billed_total | money,
-               "matches 'Medical Specials' field" if not money.specials_mismatch else "≠ Medical Specials field") }}
-    {{ ui.stat("Firm costs so far", money.firm_costs_total | money) }}
-  </div>
-  <div class="mt-4 text-xs text-muted">Coverage {{ ui.source(money.policy_limits.source) }}</div>
-  <div class="text-sm whitespace-pre-line">{{ money.policy_limits.value }}</div>
-  {% endcall %}
-
-  {% call ui.card("Overdue & next " ~ 21 ~ " days") %}
-  <ul>
-    {% for t in tasks.overdue + tasks.upcoming %}{{ ui.task_row(t) }}{% else %}<li class="text-sm text-muted">Nothing due.</li>{% endfor %}
-  </ul>
-  {% endcall %}
-
-  {% call ui.card("Coming up") %}
-  <ul class="text-sm space-y-1.5">
-    {% for e in events[:6] %}<li><span class="text-muted">{{ e.when | nice_date }}</span> · {{ e.title }} {{ ui.source(e.source) }}</li>{% endfor %}
-  </ul>
-  {% endcall %}
-
-  {% call ui.card("Providers & bills") %}
-  <ul class="text-sm divide-y divide-line">
-    {% for p in providers %}
-    <li class="py-1.5 flex justify-between gap-3"><span>{{ p.party.name }}</span><span class="font-medium">{{ p.billed_total | money }}</span></li>
-    {% endfor %}
-  </ul>
-  {% endcall %}
-</main>
+</div>
+<style>[x-cloak]{display:none!important}</style>
 {% endblock %}
