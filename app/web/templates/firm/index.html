@@ -79,10 +79,17 @@
       {% endfor %}
     </ol>
     {% if journey %}
-    <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-[13px] pt-1">
-      <span class="{{ lbl }} !text-[11px]">Key dates</span>
-      {% for e in journey %}<span class="whitespace-nowrap inline-flex items-baseline gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-brand self-center"></span><span class="text-body">{{ ui.ref(e.source, e.title) }}</span><span class="text-muted">{{ e.when | jdate }}</span></span>{% endfor %}
-      <span class="whitespace-nowrap inline-flex items-baseline gap-1.5"><span class="h-1.5 w-1.5 rounded-full ring-2 ring-brandline bg-white self-center"></span><span class="font-semibold text-brand">Today</span><span class="text-muted">{{ today | jdate }}</span></span>
+    {% set latest = journey[-1] %}
+    <div x-data="{ all: false }" class="text-[13px]">
+      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span class="text-muted">Latest</span>
+        <span class="font-semibold text-ink">{{ ui.ref(latest.source, latest.title) }}</span>
+        <span class="text-muted">{{ latest.when | nice_date }}</span>
+        <button type="button" @click="all = !all" class="ml-1 font-semibold text-brand hover:underline" x-text="all ? 'Hide key dates' : 'All {{ journey | length }} key dates'">All {{ journey | length }} key dates</button>
+      </div>
+      <ol x-show="all" x-cloak class="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-4">
+        {% for e in journey %}<li class="flex gap-2 min-w-0"><span class="text-muted w-[74px] shrink-0">{{ e.when | jdate }}</span><span class="text-body truncate">{{ ui.ref(e.source, e.title) }}</span></li>{% endfor %}
+      </ol>
     </div>
     {% endif %}
     {% if blocker %}
@@ -103,15 +110,14 @@
       <section class="{{ card }} px-6 py-4 flex flex-col gap-2.5">
         <p class="{{ lbl }}">The case in 3 lines</p>
         {% if story %}
-        <div class="flex flex-col gap-3">
+        <dl class="divide-y divide-hair">
           {% for s in story.lines %}
-          {% set risk = loop.last %}
-          <div class="{{ 'rounded-[10px] bg-badbg/60 border-l-[3px] border-bad px-3.5 py-2.5' if risk else 'pl-3.5 border-l-[3px] ' ~ ('border-brand' if loop.index == 2 else 'border-line') }}">
-            <p class="text-[11px] font-bold uppercase tracking-[.08em] {{ 'text-bad' if risk else 'text-muted' }}">{{ s.label }}</p>
-            <p class="mt-0.5 text-[16px] leading-snug text-ink">{{ s.text }}{% if s.sources %}{{ ui.cite(s.sources[0]) }}{% endif %}</p>
+          <div class="grid sm:grid-cols-[132px_minmax(0,1fr)] gap-x-4 gap-y-0.5 py-2.5 first:pt-0 last:pb-0">
+            <dt class="text-[13.5px] font-semibold {{ 'text-bad' if loop.last else 'text-muted' }} sm:pt-[2px]">{{ s.label }}</dt>
+            <dd class="text-[15.5px] leading-snug text-ink">{{ s.text }}{% if s.sources %}{{ ui.cite(s.sources[0]) }}{% endif %}</dd>
           </div>
           {% endfor %}
-        </div>
+        </dl>
         {% elif ai_status.status == "running" %}
         <div class="space-y-3 animate-pulse" aria-label="AI analysis running">
           {% for w in ["92%", "80%", "86%"] %}<div class="h-4 rounded bg-chip" style="width: {{ w }}"></div>{% endfor %}

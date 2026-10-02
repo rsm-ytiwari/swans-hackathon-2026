@@ -55,49 +55,50 @@
     </div>
   </div>
 
-  <ul class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+  <ul class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 items-start">
     {% for c in cards %}
     {% set m = c.m %}
     <li class="min-w-0" x-show="!q || $el.dataset.search.includes(q.toLowerCase().trim())"
         data-search="{{ (m.client_name ~ ' ' ~ m.display_number ~ ' ' ~ (c.summary or '') ~ ' ' ~ (m.stage_name or '')) | lower }}">
-      <a href="/m/{{ m.clio_id }}" class="group h-full flex flex-col bg-white border border-line rounded-card hover:border-brandline hover:shadow-[0_6px_24px_-12px_rgba(59,43,217,.35)] transition">
-        <div class="px-5 pt-5 flex items-start gap-3.5">
-          <div class="w-11 h-11 rounded-full bg-[#E8E6FB] text-brand flex items-center justify-center text-[15px] font-extrabold shrink-0">{{ c.initials }}</div>
-          <div class="min-w-0 flex-1">
-            <p class="flex items-center gap-2 min-w-0">
-              <span class="text-[18px] font-bold text-ink truncate group-hover:text-brand">{{ m.client_name }}</span>
-              {% if c.from_file %}<span class="shrink-0 rounded px-1.5 py-px text-[10px] font-bold tracking-wide bg-chip text-muted" title="Loaded from a Clio-shaped JSON file, not live Clio">FROM FILE</span>{% endif %}
-            </p>
-            <p class="text-[12.5px] text-muted">{{ m.display_number }}{% if c.age %} · open {{ c.age }}{% endif %}</p>
+      {# Outside: only the answers (who, stage, how late, red flags). Details open on demand. #}
+      <div class="h-full flex flex-col bg-white border border-line rounded-card hover:border-brandline transition" x-data="{ open: false }">
+        <a href="/m/{{ m.clio_id }}" class="group block px-5 pt-5 pb-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-full bg-[#E8E6FB] text-brand flex items-center justify-center text-[14px] font-extrabold shrink-0">{{ c.initials }}</div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[18px] font-bold text-ink truncate group-hover:text-brand leading-tight">{{ m.client_name }}</p>
+              <p class="text-[12.5px] text-muted truncate">{{ m.display_number }}{% if c.from_file %} · <span class="font-semibold">from file</span>{% endif %}</p>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-3">
+            <div class="flex-1 h-1.5 rounded-full bg-line overflow-hidden"><div class="h-full bg-brand rounded-full" style="width: {{ (100 * (c.stage_index + 1) / (c.stages | length)) | round(0) if c.stage_index is not none and c.stages else 0 }}%"></div></div>
+            <span class="text-[13px] font-semibold text-ink whitespace-nowrap">{{ m.stage_name or "No stage" }}</span>
+          </div>
+          <div class="mt-4 grid grid-cols-2 gap-3">
+            <div>
+              {% if c.worst %}<p class="text-[26px] leading-none font-extrabold text-bad">{{ c.worst.days }}d</p><p class="mt-1 text-[12.5px] text-muted">overdue</p>
+              {% else %}<p class="text-[26px] leading-none font-extrabold text-ok">0</p><p class="mt-1 text-[12.5px] text-muted">overdue</p>{% endif %}
+            </div>
+            <div>
+              <p class="text-[26px] leading-none font-extrabold {{ 'text-bad' if c.flags_high else 'text-ink' }}">{{ c.flags }}</p>
+              <p class="mt-1 text-[12.5px] text-muted">red flag{{ "" if c.flags == 1 else "s" }}{% if c.flags_high %} · {{ c.flags_high }} high{% endif %}</p>
+            </div>
+          </div>
+        </a>
+        <div class="mt-auto border-t border-hair">
+          <button type="button" @click="open = !open" :aria-expanded="open"
+            class="w-full px-5 py-2.5 flex items-center justify-between text-[13px] font-semibold text-body hover:text-brand">
+            <span>{{ "What’s overdue" if c.worst else "Details" }}</span>
+            <svg class="transition-transform" :class="open && 'rotate-180'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div x-show="open" x-cloak class="px-5 pb-4 text-[13.5px] leading-snug space-y-2.5">
+            {% if c.worst %}<p><span class="text-muted">Waiting on</span> <span class="font-semibold">{{ c.worst.who | short_name if c.worst.blocked else "our team" }}</span><br><span class="text-body">{{ c.worst.label }}</span></p>{% endif %}
+            <p class="text-body">{{ c.summary }}</p>
+            <p class="text-muted">Billed <span class="font-semibold text-ink">{{ c.billed | kmoney if c.billed else "none" }}</span> · Last client contact <span class="font-semibold text-ink">{{ (c.contact_days ~ "d ago") if c.contact_days is not none else "none" }}</span>{% if c.age %} · Open <span class="font-semibold text-ink">{{ c.age }}</span>{% endif %}</p>
+            <a href="/m/{{ m.clio_id }}" class="inline-block font-semibold text-brand hover:underline">Open case brief →</a>
           </div>
         </div>
-        <p class="px-5 mt-3 text-[14px] leading-snug text-body clamp2 min-h-[2.75em]">{{ c.summary }}</p>
-
-        <div class="px-5 mt-4">
-          <div class="flex gap-[3px]">
-            {% for s in c.stages %}<span class="h-1.5 flex-1 rounded-full {{ 'bg-brand' if c.stage_index is not none and loop.index0 <= c.stage_index else 'bg-line' }}" title="{{ s }}"></span>{% endfor %}
-          </div>
-          <p class="mt-1.5 text-[12.5px] text-muted">{% if c.stage_index is not none %}Stage {{ c.stage_index + 1 }} of {{ c.stages | length }} · {% endif %}<span class="font-semibold text-ink">{{ m.stage_name or "No stage" }}</span></p>
-        </div>
-
-        <div class="mx-5 mt-4 rounded-[10px] px-3.5 py-2.5 text-[13.5px] leading-snug {{ 'bg-badbg' if c.worst else 'bg-okbg' }}">
-          {% if c.worst %}
-          <p class="font-bold text-bad">{{ c.worst.days }} days overdue <span class="font-normal text-body">· {{ "waiting on " ~ (c.worst.who | short_name) if c.worst.blocked else "our team" }}</span></p>
-          <p class="text-body truncate" title="{{ c.worst.label }}">{{ c.worst.label }}</p>
-          {% elif c.open %}<p class="font-bold text-ok">Nothing overdue</p><p class="text-body">{{ c.open }} open task{{ "" if c.open == 1 else "s" }}</p>
-          {% else %}<p class="font-bold text-ok">Nothing overdue</p><p class="text-body">No open tasks</p>{% endif %}
-        </div>
-
-        <div class="mt-auto px-5 pt-4 pb-4 grid grid-cols-3 gap-2 text-[12.5px]">
-          <div><p class="text-muted">Red flags</p><p class="text-[15px] font-bold {{ 'text-bad' if c.flags_high else ('text-warn' if c.flags else 'text-ink') }}">{{ c.flags }}{% if c.flags_high %} <span class="text-[12px] font-semibold">({{ c.flags_high }} high)</span>{% endif %}</p></div>
-          <div><p class="text-muted">Billed</p><p class="text-[15px] font-bold">{{ c.billed | kmoney if c.billed else "—" }}</p></div>
-          <div><p class="text-muted">Client contact</p><p class="text-[15px] font-bold {{ 'text-bad' if c.contact_days is not none and c.contact_days > 30 }}">{{ (c.contact_days ~ "d ago") if c.contact_days is not none else "—" }}</p></div>
-        </div>
-        <div class="border-t border-hair px-5 py-2.5 flex items-center justify-between text-[13px] font-semibold text-brand">
-          <span>Open case brief</span>
-          <svg class="group-hover:translate-x-0.5 transition-transform" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m9 6 6 6-6 6"/></svg>
-        </div>
-      </a>
+      </div>
     </li>
     {% endfor %}
   </ul>
