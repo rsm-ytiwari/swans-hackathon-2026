@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% import "components/ui.html" as ui %}
+{% block title %}{{ m.display_number }} · firm view{% endblock %}
+{% block body %}
+{# Thin version (walking skeleton). Layout and blocks get replaced from plan/ui-spec.md. #}
+<header class="bg-white border-b border-line">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-start justify-between gap-6">
+    <div>
+      <div class="text-xs text-muted">{{ m.display_number }} · {{ m.practice_area }}</div>
+      <h1 class="text-2xl font-semibold">{{ m.client_name }} {{ ui.source(client.source if client else None, "contact") }}</h1>
+      <p class="text-sm text-muted mt-1">{{ summary.value }} {{ ui.source(summary.source) }}</p>
+    </div>
+    <a href="/m/{{ mid }}/share" class="shrink-0 rounded-lg border border-line px-3 py-2 text-sm hover:border-brand">Provider sharing →</a>
+  </div>
+  <div class="max-w-7xl mx-auto px-6 pb-4">{{ ui.stage_bar(stages, stages.index(m.stage_name) if m.stage_name in stages else none) }}</div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
+  {% call ui.card("Key facts") %}
+  <div class="grid grid-cols-2 gap-4">
+    {{ ui.stat("Incident", incident_date.value | nice_date, src=incident_date.source) }}
+    {{ ui.stat("Case opened", m.open_date | nice_date) }}
+    {{ ui.stat("Last talked to client", last_client_contact.when | nice_date if last_client_contact else "—",
+               last_client_contact.title if last_client_contact else None, last_client_contact.source if last_client_contact else None) }}
+    {{ ui.stat("Treating providers", providers | length) }}
+  </div>
+  {% endcall %}
+
+  {% call ui.card("Money") %}
+  <div class="grid grid-cols-2 gap-4">
+    {{ ui.stat("Estimated value", money.case_value.value | money, src=money.case_value.source) }}
+    {{ ui.stat("Medical bills", money.provider_billed_total | money,
+               "matches 'Medical Specials' field" if not money.specials_mismatch else "≠ Medical Specials field") }}
+    {{ ui.stat("Firm costs so far", money.firm_costs_total | money) }}
+  </div>
+  <div class="mt-4 text-xs text-muted">Coverage {{ ui.source(money.policy_limits.source) }}</div>
+  <div class="text-sm whitespace-pre-line">{{ money.policy_limits.value }}</div>
+  {% endcall %}
+
+  {% call ui.card("Overdue & next " ~ 21 ~ " days") %}
+  <ul>
+    {% for t in tasks.overdue + tasks.upcoming %}{{ ui.task_row(t) }}{% else %}<li class="text-sm text-muted">Nothing due.</li>{% endfor %}
+  </ul>
+  {% endcall %}
+
+  {% call ui.card("Coming up") %}
+  <ul class="text-sm space-y-1.5">
+    {% for e in events[:6] %}<li><span class="text-muted">{{ e.when | nice_date }}</span> · {{ e.title }} {{ ui.source(e.source) }}</li>{% endfor %}
+  </ul>
+  {% endcall %}
+
+  {% call ui.card("Providers & bills") %}
+  <ul class="text-sm divide-y divide-line">
+    {% for p in providers %}
+    <li class="py-1.5 flex justify-between gap-3"><span>{{ p.party.name }}</span><span class="font-medium">{{ p.billed_total | money }}</span></li>
+    {% endfor %}
+  </ul>
+  {% endcall %}
+</main>
+{% endblock %}

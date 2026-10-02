@@ -13,7 +13,7 @@ Two-person team building a working AI automation for one real personal-injury (P
 | Any question about judges, timeline, roles | `docs/event.md` |
 | Any PI domain term, money lever, competitor | `docs/domain.md` |
 | Choosing a tool or model for a step | `.claude/skills/kickoff/capability-catalog.md` |
-| Before writing code | `plan/decision.md` + `plan/tasks.md` (if they don't exist, run `/kickoff` first) |
+| Before writing code | `plan/DECISIONS.md` + `plan/tasks.md` (your rows) |
 | 2:30pm freeze, or packaging (submit by 3:30, hard close 4:00) | Run `/submit` |
 | Before the demo / pitch | `docs/demo-day.md` |
 
@@ -31,8 +31,11 @@ Two-person team building a working AI automation for one real personal-injury (P
    has a replay mode that works with wifi off.
 6. **Human gate:** nothing leaves the firm (email/SMS/letter) without an approval step. Synthetic data only;
    never commit `.env` or anything resembling real PHI.
-7. **Ownership:** Yash owns `app/`, `plan/`. Partner owns `data/`, `eval/`, `pitch/`. Don't edit the
-   other person's folders; ask instead. Commit small, pull often.
+7. **Ownership (D-010):** Yash owns `plan/`, `app/core/`, `app/clio/`, the ingest, `app/web/{main,deps,firm}.py`,
+   `templates/{base,source,home}.html`, `templates/components/`, `templates/firm/`. Jenith owns
+   `app/web/provider.py`, `templates/provider/`, `data/`, `eval/`, `pitch/`. Don't edit the other person's
+   files; ask instead. Provider-facing pages render only a `sharing.ProviderPacket`. Run
+   `git pull --rebase` before every push; commit small. Tasks and owners: `plan/tasks.md`.
 8. **The clock is the humans' job; quality is yours.** Don't rush, hedge, or cut corners because of
    time. The humans manage the schedule by cutting *scope* at checkpoints, never quality.
    - If a task turns out bigger than expected, stop and report: what's done, what's left, and 2
@@ -83,5 +86,5 @@ Two-person team building a working AI automation for one real personal-injury (P
 - Use `verification-before-completion` always.
 
 ## Stack (default unless /kickoff decides otherwise)
-Python 3.13 via `uv` · Streamlit UI · `scripts/check_providers.py` tests Ollama / Gemini / Anthropic ·
+Python 3.13 via `uv` · FastAPI + Jinja + Tailwind/HTMX/Alpine UI (D-009; run `uv run uvicorn app.web.main:app --reload --port 8000`) · `scripts/check_providers.py` tests Ollama / Gemini / Anthropic ·
 keys in `.env` (see `.env.example`).

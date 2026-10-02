@@ -108,7 +108,9 @@ def prune(con, table: str, clio_type: str, matter_id: int, keep_ids: set[int]) -
     rows = con.execute(
         f"SELECT clio_id FROM {table} WHERE clio_type = ? AND matter_id = ?", (clio_type, matter_id)
     ).fetchall()
-    stale = [r[0] for r in rows if r[0] not in keep_ids]
+    # Clio returns some ids as strings (calendar entries); SQLite stores them as integers. Compare as text.
+    keep = {str(i) for i in keep_ids}
+    stale = [r[0] for r in rows if str(r[0]) not in keep]
     for cid in stale:
         con.execute(f"DELETE FROM {table} WHERE clio_type = ? AND clio_id = ?", (clio_type, cid))
         con.execute("DELETE FROM raw WHERE clio_type = ? AND clio_id = ?", (clio_type, cid))

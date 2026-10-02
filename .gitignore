@@ -12,3 +12,7 @@ Sapini Case Materials/
 
 # Ingested Clio data, OAuth token, downloaded case files (D-001, D-005)
 app/data/
+
+# Static UI wireframes for attorney feedback (built from local clio.db; never committed)
+prototype/
+.playwright-mcp/

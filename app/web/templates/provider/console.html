@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% import "components/ui.html" as ui %}
+{% block title %}Sharing · {{ m.display_number }}{% endblock %}
+{% block body %}
+{# Thin version (owner: Jenith). Attorney decides, per provider, what that provider can see. #}
+<main class="max-w-5xl mx-auto px-6 py-6">
+  <a href="/m/{{ mid }}" class="text-sm text-muted hover:text-ink">← {{ m.client_name }}</a>
+  <h1 class="text-2xl font-semibold mt-1">Provider sharing</h1>
+  <p class="text-sm text-muted mt-1">Never shared with any provider: {{ never | join(", ") }}.</p>
+
+  <div class="mt-5 space-y-4">
+  {% for r in rows %}
+    {% call ui.card(r.p.party.name, r.p.party.description) %}
+    <form method="post" action="/m/{{ mid }}/share/{{ r.p.party.contact_id }}/policy" class="grid sm:grid-cols-2 gap-x-6 gap-y-1">
+      {% for key, (label, _) in sections.items() if key != "shared_documents" %}
+      <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="{{ key }}" {{ 'checked' if key in r.policy.sections }}> {{ label }}</label>
+      {% endfor %}
+      <div class="sm:col-span-2 flex items-center gap-3 mt-2">
+        <button class="rounded-lg bg-brand text-white px-3 py-1.5 text-sm">Save & preview as provider</button>
+        {% if r.sent %}<span class="text-xs text-muted">Sent {{ r.sent | length }}× · last viewed {{ r.sent[0].last_viewed or "not yet" }}</span>{% endif %}
+      </div>
+    </form>
+    {% endcall %}
+  {% endfor %}
+  </div>
+</main>
+{% endblock %}

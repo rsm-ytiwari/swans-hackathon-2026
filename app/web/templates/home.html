@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<main class="max-w-3xl mx-auto p-8">
+  <h1 class="text-2xl font-semibold">Matters</h1>
+  <ul class="mt-4 space-y-2">
+    {% for m in matters %}
+    <li><a class="text-brand underline" href="/m/{{ m.clio_id }}">{{ m.display_number }} · {{ m.client_name }}</a>
+      <span class="text-muted text-sm">({{ m.stage_name }})</span></li>
+    {% else %}
+    <li class="text-muted">No matters yet. Run <code>uv run python -m app.ingest --matter &lt;id&gt;</code>.</li>
+    {% endfor %}
+  </ul>
+</main>
+{% endblock %}

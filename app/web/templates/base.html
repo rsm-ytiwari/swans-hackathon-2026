@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Case digest{% endblock %}</title>
+  <script src="/static/tailwind.js"></script>
+  <script>
+    // Design tokens (shared by both views). Replace values from plan/ui-spec.md, not per page.
+    tailwind.config = {
+      theme: { extend: {
+        colors: {
+          ink: '#0f172a', muted: '#64748b', line: '#e2e8f0', surface: '#f8fafc',
+          brand: '#1d4ed8', ok: '#15803d', warn: '#b45309', bad: '#b91c1c',
+        },
+        fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+      } }
+    }
+  </script>
+  <script src="/static/htmx.min.js" defer></script>
+  <script src="/static/alpine.min.js" defer></script>
+</head>
+<body class="bg-surface text-ink font-sans antialiased">
+  {% block body %}{% endblock %}
+
+  {# One shared dialog for click-to-source. Any element with hx-get="/source/..." hx-target="#source-body" opens it. #}
+  <dialog id="source-dialog" class="rounded-xl p-0 w-full max-w-2xl backdrop:bg-black/40">
+    <div class="flex items-center justify-between border-b border-line px-5 py-3">
+      <span class="text-sm font-medium text-muted">Source record</span>
+      <button onclick="this.closest('dialog').close()" class="text-muted hover:text-ink">✕</button>
+    </div>
+    <div id="source-body" class="px-5 py-4 max-h-[70vh] overflow-y-auto text-sm"></div>
+  </dialog>
+  <script>
+    document.body.addEventListener('htmx:afterSwap', (e) => {
+      if (e.detail.target.id === 'source-body') document.getElementById('source-dialog').showModal();
+    });
+  </script>
+</body>
+</html>
