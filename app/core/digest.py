@@ -26,7 +26,9 @@ SYSTEM = (
     "You brief a personal-injury attorney who has 10 seconds. Use only the case material given. "
     "Write exactly 3 short sentences (max 25 words each): (1) where the case stands and what it turns "
     "on, (2) what is blocking progress right now, including who it is waiting on, (3) the most important "
-    "recent development. Plain words, no hedging, no legal citations. For each sentence list the tags "
+    "recent development. Write complete, plain sentences a busy reader understands at a glance: no "
+    "abbreviations or jargon (write 'range of motion', not 'ROM'), no semicolons, no lists inside a sentence, "
+    "no hedging, no legal citations. For each sentence list the tags "
     "(like Note:123) of the records that support it, copied exactly from the material."
 )
 

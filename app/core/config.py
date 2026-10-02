@@ -65,3 +65,13 @@ TREATMENT_MIN_ITEMS = 3       # fewer dated items than this per provider = too t
 FLAG_DOC_CHUNK_CHARS = 60000  # max characters of document text sent to the model per call
 FLAG_MAX_ASSERTIONS = 15      # key factual assertions extracted from the case file
 FLAG_QUOTE_MATCH = 90         # rapidfuzz partial_ratio needed for a quote to count as found in its source
+
+# ---- Case journey (firm view) ----
+# The first document received in a folder whose name contains the key marks that milestone.
+MILESTONE_FOLDERS = [
+    ("medical records", "Medical records collected"),
+    ("pleadings", "Lawsuit filed"),
+    ("discovery", "Discovery exchanged"),
+    ("experts", "Expert reports"),
+    ("settlement", "Settlement papers"),
+]

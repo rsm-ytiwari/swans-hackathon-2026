@@ -26,6 +26,32 @@ def _short_task(name: str, waiting_on: str | None) -> str:
     return name[:1].upper() + name[1:]
 
 
+def _needs_answer(overdue, upcoming) -> str:
+    """One answer line for 'what needs me now', computed from the task list (never a count alone)."""
+    if overdue:
+        worst = min(overdue, key=lambda x: x.days_from_today)
+        who = f", waiting on {worst.waiting_on}" if worst.waiting_on else ""
+        n = len(overdue)
+        lead = "1 thing is overdue" if n == 1 else f"{n} things are overdue"
+        return f"{lead}; the worst is {-worst.days_from_today} days late{who}."
+    if upcoming:
+        nxt = upcoming[0]
+        return f"Nothing overdue. Next: {_short_task(nxt.name, nxt.waiting_on)} {('in ' + str(nxt.days_from_today) + ' days') if nxt.days_from_today else 'today'}."
+    return "Nothing open on this case."
+
+
+def _money_bar(money) -> dict:
+    """The four numbers for the worth-vs-coverage visual, all computed in code."""
+    value = float(money["case_value"].value) if money["case_value"].value else None
+    liens = facts.dollars(money["liens"].value)
+    return {
+        "value": value,
+        "reachable": facts.reachable_coverage(money["policy_limits"].value),
+        "billed": money["provider_billed_total"] or None,
+        "liens": liens[0] if liens else None,
+    }
+
+
 def _flags(con, mid: int, t: date):
     """Stored flags if computed (app.core.flags), else rule flags live; None if the module is unavailable."""
     try:
@@ -74,6 +100,10 @@ def firm_view(request: Request, mid: int, since: str | None = None):
         "bottom_line": digest.bottom_line(con, mid, t) if ai["status"] == "done" else None,
         "do_next": [(x, _short_task(x.name, x.waiting_on)) for x in do_next[:5]], "do_next_more": max(0, len(do_next) - 5),
         "money": money,
+        "money_bar": _money_bar(money),
+        "needs_answer": _needs_answer(tasks["overdue"], tasks["upcoming"]),
+        "journey": facts.milestones(con, mid, t),
+        "case_age": facts.age(facts._d(facts.field_value(con, mid, "incident_date").value) or facts._d(m["open_date"]), t),
         "coverage_line": _first_line(money["policy_limits"].value),
         "liens_line": _first_line(money["liens"].value),
         "flags": _flags(con, mid, t),

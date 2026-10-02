@@ -61,6 +61,11 @@ class ProviderPacket:
         return json.dumps(asdict(self), default=str, sort_keys=True)
 
 
+def hidden_sections(policy: "Policy") -> list[str]:
+    """Labels of the sections this provider will NOT see (shown as placeholders in the attorney preview)."""
+    return [label for key, (label, _) in SECTIONS.items() if key not in policy.sections]
+
+
 # ---------- our own state ----------
 
 def connect() -> sqlite3.Connection:

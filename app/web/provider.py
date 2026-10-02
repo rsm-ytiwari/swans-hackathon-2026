@@ -14,17 +14,26 @@ router = APIRouter()
 
 
 @router.get("/m/{mid}/share")
-def console(request: Request, mid: int):
-    """Attorney side: every provider, what each one can see, and what has been sent."""
+def console(request: Request, mid: int, provider: int | None = None):
+    """Attorney side: pick a provider (left), set what they can see, live preview (right)."""
     con, app_con = facts.connect(), sharing.connect()
+    t = today()
     rows = []
-    for p in facts.providers(con, mid, today()):
+    for p in facts.providers(con, mid, t):
+        if not (p.charges or p.records or p.bills or p.requests):
+            continue  # an individual clinician with nothing of their own on file
         pid = p.party.contact_id
-        rows.append({"p": p, "policy": sharing.get_policy(app_con, mid, pid),
-                     "sent": sharing.publications_for(app_con, mid, pid)})
-    return templates.TemplateResponse(request, "provider/console.html", {
-        "mid": mid, "m": facts.matter(con, mid), "rows": rows,
-        "sections": sharing.SECTIONS, "never": sharing.NEVER_SHARED})
+        sent = sharing.publications_for(app_con, mid, pid)
+        rows.append({"p": p, "pid": pid, "sent": sent, "views": sum(s["views"] for s in sent),
+                     "last_sent": sent[0]["approved_at"] if sent else None})
+    selected = next((r for r in rows if r["pid"] == provider), rows[0] if rows else None)
+    ctx = {"mid": mid, "m": facts.matter(con, mid), "rows": rows, "selected": selected,
+           "sections": sharing.SECTIONS, "never": sharing.NEVER_SHARED}
+    if selected:
+        policy = sharing.get_policy(app_con, mid, selected["pid"])
+        ctx.update(policy=policy, pkt=sharing.build_packet(con, mid, selected["pid"], policy, t).__dict__,
+                   hidden=sharing.hidden_sections(policy))
+    return templates.TemplateResponse(request, "provider/console.html", ctx)
 
 
 @router.post("/m/{mid}/share/{pid}/policy")
@@ -33,7 +42,7 @@ async def save_policy(request: Request, mid: int, pid: int):
     policy = sharing.Policy({k for k in sharing.SECTIONS if form.get(k)},
                             {int(v) for v in form.getlist("doc")})
     sharing.save_policy(sharing.connect(), mid, pid, policy)
-    return RedirectResponse(f"/m/{mid}/share/{pid}/preview", status_code=303)
+    return RedirectResponse(f"/m/{mid}/share?provider={pid}", status_code=303)
 
 
 @router.get("/m/{mid}/share/{pid}/preview")
@@ -51,7 +60,7 @@ def publish(mid: int, pid: int, approved_by: str = Form("Attorney")):
     con, app_con = facts.connect(), sharing.connect()
     pkt = sharing.build_packet(con, mid, pid, sharing.get_policy(app_con, mid, pid), today())
     sharing.publish(app_con, mid, pid, pkt, approved_by)
-    return RedirectResponse(f"/m/{mid}/share", status_code=303)
+    return RedirectResponse(f"/m/{mid}/share?provider={pid}", status_code=303)
 
 
 @router.get("/p/{token}")

@@ -396,3 +396,54 @@ def days_between(a: date, b: date) -> int:
 
 def add_days(d: date, n: int) -> date:
     return d + timedelta(days=n)
+
+
+# ---------- view helpers: journey, reachable coverage, age ----------
+
+_DOLLARS = re.compile(r"\$\s?(\d[\d,]*(?:\.\d+)?)")
+_SPLIT_LIMIT = re.compile(r"\$\s?(\d[\d,]*)\s*/\s*\$\s?(\d[\d,]*)")
+
+
+def dollars(text) -> list[float]:
+    return [float(a.replace(",", "")) for a in _DOLLARS.findall(str(text or ""))]
+
+
+def reachable_coverage(text) -> float | None:
+    """Most one claimant can reach from a limits text: for split limits "$A / $B" (per person / per
+    accident) only A counts; otherwise the largest amount stated."""
+    split = [float(a.replace(",", "")) for a, _ in _SPLIT_LIMIT.findall(str(text or ""))]
+    amounts = split or dollars(text)
+    return max(amounts) if amounts else None
+
+
+def age(start: date | None, today: date) -> str:
+    if not start:
+        return ""
+    months = (today.year - start.year) * 12 + today.month - start.month - (today.day < start.day)
+    y, m = divmod(max(months, 0), 12)
+    return " ".join(p for p in (f"{y} yr{'s' if y != 1 else ''}" if y else "", f"{m} mo" if m else "") if p) or "under a month"
+
+
+def milestones(con, mid: int, today: date | None = None) -> list[Event]:
+    """Dated landmarks for the case journey strip: incident, case opened, first treatment, the first
+    document in each milestone folder (config.MILESTONE_FOLDERS), and today."""
+    today = today or date.today()
+    out: list[Event] = []
+    inc = field_value(con, mid, "incident_date")
+    if inc.value:
+        out.append(Event(_d(inc.value), "milestone", "Incident", "", inc.source))
+    m = matter(con, mid)
+    if m["open_date"]:
+        out.append(Event(_d(m["open_date"]), "milestone", "Case opened", "", Source("Matter", mid, m["display_number"])))
+    charges = [c for p in providers(con, mid, today) for c in p.charges if c.date]
+    if charges:
+        first = min(charges, key=lambda c: c.date)
+        out.append(Event(_d(first.date), "milestone", "Treatment began", "", first.source))
+    docs = documents(con, mid)
+    for key, label in config.MILESTONE_FOLDERS:
+        hits = [d for d in docs if key in d.folder.lower() and d.received]
+        if hits:
+            d = min(hits, key=lambda x: x.received)
+            out.append(Event(_d(d.received), "milestone", label, d.name, d.source))
+    out.append(Event(today, "today", "Today", "", Source("Matter", mid, "today")))
+    return sorted(out, key=lambda e: e.when)
