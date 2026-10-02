@@ -6,11 +6,13 @@ Routes owned here are shared by both views: matter picker, click-to-source, docu
 Firm view routes live in app/web/firm.py, provider view routes in app/web/provider.py.
 """
 
+import base64
+import os
 import threading
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.core import facts, status
@@ -19,6 +21,27 @@ from app.web.deps import serve_document, templates
 
 app = FastAPI(title="Case digest")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+
+
+@app.middleware("http")
+async def firm_password(request: Request, call_next):
+    """Optional: when APP_PASSWORD is set (public demo link), firm pages need it via HTTP basic auth.
+    Provider links (/p/...) stay open: their unguessable token is their access control."""
+    pw = os.getenv("APP_PASSWORD")
+    path = request.url.path
+    if pw and not path.startswith(("/p/", "/static/")):
+        header = request.headers.get("authorization", "")
+        ok = False
+        if header.startswith("Basic "):
+            try:
+                ok = base64.b64decode(header[6:]).decode().split(":", 1)[1] == pw
+            except (ValueError, IndexError):
+                ok = False
+        if not ok:
+            return Response("Password required", status_code=401, headers={"WWW-Authenticate": 'Basic realm="case brief"'})
+    return await call_next(request)
+
+
 app.include_router(firm.router)
 app.include_router(provider.router)
 
