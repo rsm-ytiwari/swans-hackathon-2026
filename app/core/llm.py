@@ -1,7 +1,7 @@
 """Provider-agnostic LLM wrapper (D-009, CLAUDE.md rules 3 and 5).
 
 Every AI feature calls `complete(...)`. Nothing here knows about any case.
-Providers: anthropic, gemini, ollama (env-configured). Every call is cached on disk
+Providers: claude_cli (local Claude Code login, no key), anthropic, gemini, ollama (env-configured). Every call is cached on disk
 (app/cache/llm/) and logged to usage.jsonl. LLM_REPLAY=1 serves the cache only (offline demo).
 Callers catch LLMUnavailable and show "AI off"; deterministic features must never depend on this.
 
@@ -28,7 +28,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEFAULT_CACHE_DIR = Path(__file__).resolve().parents[1] / "cache" / "llm"
-AUTO_ORDER = ["anthropic", "gemini", "ollama"]
+AUTO_ORDER = ["claude_cli", "anthropic", "gemini", "ollama"]
 
 # USD per million (input, output) tokens. Ollama is local = 0.
 PRICING: dict[str, tuple[float, float]] = {
@@ -38,6 +38,9 @@ PRICING: dict[str, tuple[float, float]] = {
     "claude-sonnet-5-5": (3.00, 15.00),  # ASSUMED
     # Google public pricing for Flash-class models; exact figure for this id not confirmed. ASSUMED
     "gemini-3.8-flash": (0.30, 2.50),  # ASSUMED
+    # claude_cli runs on the user's Claude subscription (not billed per token). We still report the
+    # API-equivalent cost so "cost per case" is comparable: haiku alias = Haiku 4.5 pricing above.
+    "haiku": (1.00, 5.00),
 }
 DEFAULT_GEMINI_PRICE = (0.30, 2.50)  # ASSUMED, used for unlisted gemini models
 
@@ -79,6 +82,30 @@ def _anthropic(model, system, prompt, schema, max_tokens):
     )
     text = "".join(b.text for b in resp.content if b.type == "text")
     return text, resp.usage.input_tokens, resp.usage.output_tokens
+
+
+def _claude_cli(model, system, prompt, schema, max_tokens):
+    """Headless Claude Code (`claude -p`) on the logged-in user's subscription: no API key needed.
+    Runs in a temp dir with no tools, settings, MCP or skills, so the prompt is all the model sees."""
+    import subprocess
+    import tempfile
+
+    cmd = ["claude", "-p", "--model", model, "--output-format", "json", "--tools", "",
+           "--system-prompt", system or "You are a careful assistant.", "--setting-sources", "",
+           "--strict-mcp-config", "--disable-slash-commands"]
+    if schema is not None:
+        cmd += ["--json-schema", json.dumps(schema)]
+    with tempfile.TemporaryDirectory() as cwd:
+        out = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=600, cwd=cwd)
+    if out.returncode != 0:
+        raise RuntimeError(f"claude -p exited {out.returncode}: {out.stderr[:300]}")
+    j = json.loads(out.stdout)
+    if j.get("is_error"):
+        raise RuntimeError(f"claude -p error: {str(j.get('result'))[:300]}")
+    text = json.dumps(j["structured_output"]) if j.get("structured_output") is not None else j.get("result", "")
+    u = j.get("usage", {})
+    tin = u.get("input_tokens", 0) + u.get("cache_creation_input_tokens", 0) + u.get("cache_read_input_tokens", 0)
+    return text, tin, u.get("output_tokens", 0)
 
 
 def _gemini(model, system, prompt, schema, max_tokens):
@@ -129,10 +156,16 @@ def _ollama(model, system, prompt, schema, max_tokens):
 
 # name -> (fn, model_getter, configured_getter)
 _PROVIDERS: dict[str, tuple[ProviderFn, Callable[[], str], Callable[[], bool]]] = {
+    # Local default: the Claude Code CLI the user is logged into. Configured when `claude` is on PATH.
+    "claude_cli": (
+        _claude_cli,
+        lambda: os.getenv("CLAUDE_CLI_MODEL") or "haiku",
+        lambda: __import__("shutil").which("claude") is not None and os.getenv("CLAUDE_CLI_DISABLED") != "1",
+    ),
     "anthropic": (
         _anthropic,
         lambda: os.getenv("ANTHROPIC_MODEL") or "claude-haiku-4-5",
-        lambda: bool(os.getenv("ANTHROPIC_API_KEY")),
+        lambda: bool((os.getenv("ANTHROPIC_API_KEY") or "").strip()),
     ),
     "gemini": (
         _gemini,
