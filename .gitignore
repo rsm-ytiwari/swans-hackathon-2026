@@ -16,3 +16,16 @@ app/data/
 # Static UI wireframes for attorney feedback (built from local clio.db; never committed)
 prototype/
 .playwright-mcp/
+
+# Event materials and internal tooling: kept locally, not part of the submission
+LDG - 8_30 LDG Hackathon.pdf
+raw.md
+brief/
+docs/event.md
+docs/demo-day.md
+.mcp.json
+eval/
+pitch/
+plan/video/*.mp4
+plan/video/*.png
+plan/video/*.jpg
