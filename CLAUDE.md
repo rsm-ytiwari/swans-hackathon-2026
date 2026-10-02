@@ -6,12 +6,15 @@ Two-person team building a working AI automation for one real personal-injury (P
 ## Read-before-acting map (read on demand, not all at once)
 | When | Read |
 |---|---|
+| **Start of every chat** | `plan/HANDOFF.md` (where we are), then the `plan/DECISIONS.md` entries it cites |
+| After any action | Append to `plan/LOG.md` with its D-id. New decision → PROPOSED entry in `plan/DECISIONS.md`. Milestone → overwrite `plan/HANDOFF.md` (≤60 lines) |
+| Sapini case contents / slides detail | `brief/sapini-map.md`, `brief/slides-inventory.md` |
 | Brief arrives, or re-scoping | Run `/kickoff` (it loads `brief/`, `docs/event.md`, `docs/domain.md`, then its catalog) |
 | Any question about judges, timeline, roles | `docs/event.md` |
 | Any PI domain term, money lever, competitor | `docs/domain.md` |
 | Choosing a tool or model for a step | `.claude/skills/kickoff/capability-catalog.md` |
 | Before writing code | `plan/decision.md` + `plan/tasks.md` (if they don't exist, run `/kickoff` first) |
-| 3:00pm, or packaging | Run `/submit` |
+| 2:30pm freeze, or packaging (submit by 3:30, hard close 4:00) | Run `/submit` |
 | Before the demo / pitch | `docs/demo-day.md` |
 
 **Never propose a solution before reading the brief and `plan/decision.md`.**

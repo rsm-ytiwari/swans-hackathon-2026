@@ -6,3 +6,6 @@ __pycache__/
 app/cache/
 *.log
 .claude/settings.local.json
+
+# Real case file (85MB); app reads from Clio, never commit
+Sapini Case Materials/
