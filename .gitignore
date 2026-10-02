@@ -9,3 +9,6 @@ app/cache/
 
 # Real case file (85MB); app reads from Clio, never commit
 Sapini Case Materials/
+
+# Ingested Clio data, OAuth token, downloaded case files (D-001, D-005)
+app/data/

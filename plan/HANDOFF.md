@@ -1,4 +1,4 @@
-# Handoff · updated 10:01
+# Handoff · updated 11:10
 
 Overwrite this file at every milestone and before context fills. **Hard cap: 60 lines.** Detail goes in
 DECISIONS.md and LOG.md, not here.
@@ -11,32 +11,41 @@ DECISIONS.md and LOG.md, not here.
 - Feature shortlist **not yet decided**; scored on engineering + product value together.
 
 ## Done
-- Case data inventoried → `brief/sapini-map.md` (strategy items flagged by id, coverage ledger), `brief/slides-inventory.md`
-- Clio trial created + connected to Swans seeder (steps 1–2)
-- Case materials gitignored (D-005); work logs set up (D-002)
+- Case data inventoried → `brief/sapini-map.md`, `brief/slides-inventory.md`
+- **Live Clio ingest working (D-004):** `uv run python -m app.ingest --matter 1811198093` → `app/data/clio.db`
+  (gitignored) + files in `app/data/files/`. Counts = seeder (42/69/14/17/31/14). Idempotent. 16 tests pass
+  (`uv run pytest app/tests`), incl. GET-only guard (D-001). Every row keeps clio_type + clio_id (D-006).
+- Seed diff: `uv run python -m app.seed_diff --matter 1811198093` (results in LOG 11:10)
+
+## Key data facts (live Clio, D-008)
+- Medical records + bills are now **18 per-provider PDFs with text layers**; no OCR needed for them.
+- The two scanned bundles from the local seed are not in Clio. Only 3 small docs lack a text layer.
+- 9 provider charges are ExpenseEntry, non-billable, amount in `non_billable_total` ($118,400); 5 firm costs ($1,410).
+- `brief/sapini-map.md` page refs for records/bills are stale (partner/inventory chat to refresh).
 
 ## In progress
-- Seeder step 3: create 8 matter stages in Clio UI (human) → steps 4–5 load Sapini
-- Clio developer app for our own read access (human) → pipeline spike chat (D-004)
-- Asking attorneys Q-1…Q-7
+- Asking attorneys Q-1, Q-3, Q-6
+- Feature shortlist + PROPOSED decisions
 
 ## Next
-- 10:20 · feature shortlist + PROPOSED decisions; execution starts
+- Pick features; build on `app/data/clio.db` (tables: matters, notes, communications, tasks,
+  calendar_entries, activities, documents, contacts, relationships, custom_field_values, …; `raw` has full JSON)
 - 12:00 · checkpoint: live Clio data flowing through to the firm view, must-haves working
 - 2:30 freeze · 3:30 submit · **4:00 hard close**
 
 ## Open questions (answers → LOG.md, then the decision that depends on them)
-- Q-1 Coverage: show providers policy limits, a yes/no, or nothing? → D-003 allowlist
-- Q-2 Provider status: stage name only, or also offers / estimated time to settle? → D-003 allowlist
-- Q-3 Provider delivery: portal login, or an approved emailed update? → D-003 form
-- Q-4 Bills: provider sees only their own bill, or total specials across providers? → D-003 allowlist
-- Q-5 Firm side: if we nail only one: "what changed", "overdue/next", or source-linked injuries?
-- Q-6 Swans: is a "preview as provider" screen OK in the demo, or must it be a separate login?
-- Q-7 Main firm user: attorney, case manager, or paralegal?
+Ask these three. Default in [brackets] is what we build if there's no answer.
+- Q-1 Attorney: "Which money numbers would you let a treating provider see: policy limits, settlement
+  offers, other providers' bills, or none?" → D-003 allowlist defaults [own bill + case stage only]
+- Q-3 Attorney: "Would you give providers a live link, or approve an update you send each time the case
+  moves?" → D-003 provider view form [approval queue that publishes a read-only link]
+- Q-6 Swans: "Does the provider view need its own login for the demo, or is 'preview as provider' fine?"
+  → scope of auth work [preview-as-provider screen, no separate login]
 
 ## Blockers / risks
-- Seeder loads 31 docs / 14 expenses; local JSON has 15 / 5 → live Clio wins (D-008); re-check the map after ingest
-- Unknown: can a Clio trial account create a developer app? If not, ask Swans immediately
+- Clio token in `app/data/clio_token.json` (30 days, auto-refresh). Re-auth: `uv run python -m app.clio.auth`
+- Personal injury scope (damages/medical records/liens endpoints) not granted; not needed so far
+- Ingest code not yet committed
 
 ## Pointers
 Decisions: `plan/DECISIONS.md` · Log: `plan/LOG.md` · Case data: `brief/sapini-map.md` ·
