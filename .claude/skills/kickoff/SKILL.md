@@ -71,7 +71,16 @@ Rank the survivors by gut, with a one-line reason each. Recommend one. **Stop.**
 | `plan/decision.md` | ≤ 1 page: problem, lever, chosen shape + why, the boring baseline, assumptions, value line |
 | `plan/process.yaml` | As-is + to-be steps (schema in `framework.md`) |
 | `plan/diagram-brief.md` | Fill `diagram-brief-template.md`. This is the prompt for Claude Design |
-| `plan/tasks.md` | Tasks with owner (Yash / partner), executor (main session / `implementer` subagent / Codex / partner), files, done-criteria, checkpoint |
+| `plan/tasks.md` | Tasks grouped under milestones (below), each with owner (Yash / partner), executor (main session / `implementer` subagent / Codex / partner), files, done-criteria |
+
+Milestones are **scope, not countdowns**. Each is a thin slice that is fully working at its own size:
+- **M1 (9:45):** tracer bullet: input → every step stubbed (labeled MOCK) → output on screen
+- **M2 (12:00):** the demo case runs for real end-to-end
+- **M3 (2:30):** hardening, eval numbers, replay mode
+- **Stretch:** anything else, only if M3 is done
+
+Size tasks so each one is clearly finishable. If the plan doesn't fit, cut stretch scope first, then
+M3 features. Never lower the quality bar inside a task.
 
 Executor routing for `plan/tasks.md`:
 - Ambiguous design or cross-cutting work → main session.

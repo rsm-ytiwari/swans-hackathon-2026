@@ -30,22 +30,38 @@ Two-person team building a working AI automation for one real personal-injury (P
    never commit `.env` or anything resembling real PHI.
 7. **Ownership:** Yash owns `app/`, `plan/`. Partner owns `data/`, `eval/`, `pitch/`. Don't edit the
    other person's folders; ask instead. Commit small, pull often.
-8. **Time:** check `date` at the start of each task and warn if we're past a checkpoint in
-   `docs/event.md` (9:10 commit · 12:00 end-to-end · 2:30 freeze · 3:00 submit block · 3:45 submit).
+8. **The clock is the humans' job; quality is yours.** Don't rush, hedge, or cut corners because of
+   time. The humans manage the schedule by cutting *scope* at checkpoints, never quality.
+   - If a task turns out bigger than expected, stop and report: what's done, what's left, and 2
+     smaller-scope options.
+   - Never present a stub, placeholder, or hardcoded output as working. Anything mocked on purpose is
+     labeled `MOCK` in code and UI.
+   - A smaller thing done properly beats a bigger thing half-done.
 
 ## Thinking and delegation routing
 | Work | Who | Model / effort |
 |---|---|---|
-| Kickoff, design, re-scoping, debugging after 2 failed tries | Main session (plan mode for big changes) | Opus · high/xhigh (`/effort`) |
+| `/kickoff` | Skill (switches automatically) | Opus · xhigh |
+| Orchestrating, small fixes, reviewing results | Main session | Opus · medium (default in `settings.local.json`) |
+| Re-scoping, design change, debugging after 2 failed tries | Main session, plan mode for big changes | `/effort high` for that task, then back to medium |
 | Well-specified coding task in owned files | `implementer` subagent | Sonnet · medium |
 | Codebase or doc lookups | Built-in `Explore` subagent | — |
 | 12:00 and 2:30 demo-readiness review | `reviewer` subagent | Opus · high |
 | Self-contained module, separate files, clear interface | Codex: `codex exec -s workspace-write -o plan/codex-<task>.md "<task + files + done-criteria>"` | Codex default |
 | Bulk synthetic data, app runtime experiments | Local Ollama `gemma4:26b` / free Gemini | free |
 
-- Max **3 parallel subagents**.
-- Each delegation states: goal, files it may touch, done-criteria, and the verification command.
+- **Delegate only when it pays:** tasks over ~15 minutes, tasks that run in parallel, or tasks that read
+  lots of files. Do small fixes inline with no ceremony. Max **3 parallel subagents**.
+- A delegation states: goal, files it may touch, what "done" looks like, how to verify. Give it
+  **scope, not deadlines.**
 - Read subagent and Codex results critically and re-run their verification yourself.
+
+## Context hygiene (the `plan/` files are the memory, not the chat)
+- Decisions live in `plan/decision.md` and `plan/tasks.md`, so the chat can be cleared freely.
+- `/clear` after `/kickoff` finishes, and after each checkpoint. Then start with "read `plan/` and continue."
+- Use `/compact` mid-task if the session gets long. Prefer subagents for anything that reads many files
+  or long logs; they return ≤ 10-line summaries.
+- Don't paste large outputs or whole files into the chat. Point to the path.
 - Local models are for the **app's runtime and data generation**, not for writing our code (too much
   quality loss for a 6-hour build).
 
