@@ -30,7 +30,10 @@
   <section class="{{ card }} px-6 py-4 flex flex-wrap gap-x-6 gap-y-3 items-center">
     <div class="w-14 h-14 rounded-full bg-[#E8E6FB] text-brand flex items-center justify-center text-2xl font-extrabold shrink-0">{{ initials }}</div>
     <div class="flex-[999_1_480px] min-w-0 flex flex-col gap-2">
-      <h1 class="text-[30px] sm:text-[34px] leading-none font-extrabold tracking-[-0.02em]">{{ ui.ref(client.source if client else None, m.client_name) }}</h1>
+      <div class="flex items-baseline gap-x-3 flex-wrap">
+        <h1 class="text-[30px] sm:text-[34px] leading-none font-extrabold tracking-[-0.02em]">{{ ui.ref(client.source if client else None, m.client_name) }}</h1>
+        <span class="text-[13px] text-muted">Attorney <span class="font-semibold text-body">{{ m.responsible_attorney or "not set in Clio" }}</span></span>
+      </div>
       <p class="text-[16px] leading-snug text-body">
         {{ (summary.value | string).split(". ")[0].rstrip(".") if summary.value and story and story.injuries else (summary.value or m.description) }}
         · {% if incident_date.value %}<strong class="text-ink">{{ incident_date.value | nice_date }}</strong>{% else %}<span class="text-warn">incident date not in Clio</span>{% endif %}{{ ui.cite(summary.source or incident_date.source) }}</p>
@@ -40,13 +43,23 @@
       </div>
       {% endif %}
     </div>
-    <dl class="flex-[1_1_380px] grid grid-cols-2 gap-x-6 gap-y-2.5">
-      <div><dt class="{{ lbl }}">Open</dt><dd class="mt-0.5 text-[19px] font-bold">{{ case_age or "—" }}</dd></div>
-      <div><dt class="{{ lbl }}">Last talked to client</dt><dd class="mt-0.5 text-[19px] font-bold">
-        {% if last_client_contact %}{% set d = (today - last_client_contact.when).days %}{{ ui.ref(last_client_contact.source, "today" if d == 0 else (d ~ " day" ~ ("" if d == 1 else "s") ~ " ago")) }}{% else %}<span class="text-[14px] text-warn">no call or email in Clio</span>{% endif %}</dd></div>
-      <div><dt class="{{ lbl }}">Attorney</dt><dd class="mt-0.5 text-[15px] font-semibold">{{ m.responsible_attorney or "Not set in Clio" }}</dd></div>
-      <div class="min-w-0"><dt class="{{ lbl }}">Next date</dt><dd class="mt-0.5 text-[15px] font-semibold leading-snug clamp2" title="{{ next_date.title if next_date }}">
-        {% if next_date %}{{ ui.ref(next_date.source, next_date.when | mdate ~ " · " ~ (next_date.title | short_name | truncate(28, true, "…", 0))) }}{% else %}<span class="text-muted font-normal">nothing on the calendar</span>{% endif %}</dd></div>
+    {# KPIs: the two numbers attorneys asked for (worth, coverage) + client contact + next date #}
+    <dl class="flex-[1_1_560px] grid grid-cols-2 xl:grid-cols-4 gap-y-3 xl:divide-x divide-line rounded-[12px] bg-[#F8F8FB] border border-hair py-3">
+      <div class="px-4 min-w-0"><dt class="{{ lbl }} !text-[11px]">Case value</dt>
+        <dd class="mt-1 text-[22px] leading-none font-extrabold">{% if mv.value %}{{ ui.ref(money.case_value.source, mv.value | kmoney) }}{% else %}<span class="text-[14px] font-semibold text-warn">not in Clio</span>{% endif %}</dd>
+        <dd class="mt-1 text-[12px] text-muted">estimated</dd></div>
+      <div class="px-4 min-w-0"><dt class="{{ lbl }} !text-[11px]">Coverage</dt>
+        <dd class="mt-1 text-[22px] leading-none font-extrabold {{ 'text-bad' if mv.reachable and mv.value and mv.value > mv.reachable }}">{% if mv.reachable %}{{ ui.ref(money.policy_limits.source, mv.reachable | kmoney) }}{% else %}<span class="text-[14px] font-semibold text-warn">not in Clio</span>{% endif %}</dd>
+        <dd class="mt-1 text-[12px] {{ 'text-warn font-bold tracking-wide' if mv.assumption else 'text-muted' }}" title="{{ mv.assumption }}">{{ "ASSUMED" if mv.assumption else "per person" }}</dd></div>
+      <div class="px-4 min-w-0"><dt class="{{ lbl }} !text-[11px]">Last contact</dt>
+        {% if last_client_contact %}{% set d = (today - last_client_contact.when).days %}
+        <dd class="mt-1 text-[22px] leading-none font-extrabold {{ 'text-bad' if d > 30 }}">{{ ui.ref(last_client_contact.source, ("today" if d == 0 else d ~ "d ago")) }}</dd>
+        <dd class="mt-1 text-[12px] text-muted">last {{ last_client_contact.kind }}</dd>
+        {% else %}<dd class="mt-1 text-[14px] font-semibold text-warn">none in Clio</dd>{% endif %}</div>
+      <div class="px-4 min-w-0"><dt class="{{ lbl }} !text-[11px]">Next date</dt>
+        {% if next_date %}<dd class="mt-1 text-[22px] leading-none font-extrabold">{{ ui.ref(next_date.source, next_date.when | mdate) }}</dd>
+        <dd class="mt-1 text-[12px] text-muted truncate" title="{{ next_date.title }}">{{ next_date.title | short_name }}</dd>
+        {% else %}<dd class="mt-1 text-[14px] text-muted">nothing scheduled</dd>{% endif %}</div>
     </dl>
   </section>
 
@@ -66,8 +79,11 @@
       {% endfor %}
     </ol>
     {% if journey %}
-    <p class="text-[13px] text-muted leading-relaxed"><span class="font-bold uppercase tracking-[.08em] text-[12px] mr-1 whitespace-nowrap">Key dates</span>
-      {% for e in journey %} <span class="whitespace-nowrap">{% if not loop.first %}<span class="mr-1.5">·</span>{% endif %}<span class="text-body font-medium">{{ e.title }}</span> {{ e.when | jdate }}{{ ui.cite(e.source) }}</span>{% endfor %} <span class="whitespace-nowrap font-semibold text-brand"><span class="mr-1.5 font-normal text-muted">·</span>Today {{ today | jdate }}</span></p>
+    <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 text-[13px] pt-1">
+      <span class="{{ lbl }} !text-[11px]">Key dates</span>
+      {% for e in journey %}<span class="whitespace-nowrap inline-flex items-baseline gap-1.5"><span class="h-1.5 w-1.5 rounded-full bg-brand self-center"></span><span class="text-body">{{ ui.ref(e.source, e.title) }}</span><span class="text-muted">{{ e.when | jdate }}</span></span>{% endfor %}
+      <span class="whitespace-nowrap inline-flex items-baseline gap-1.5"><span class="h-1.5 w-1.5 rounded-full ring-2 ring-brandline bg-white self-center"></span><span class="font-semibold text-brand">Today</span><span class="text-muted">{{ today | jdate }}</span></span>
+    </div>
     {% endif %}
     {% if blocker %}
     <div class="flex gap-3.5 items-center bg-badbg rounded-[10px] px-4 py-2.5 flex-wrap">
@@ -87,12 +103,15 @@
       <section class="{{ card }} px-6 py-4 flex flex-col gap-2.5">
         <p class="{{ lbl }}">The case in 3 lines</p>
         {% if story %}
-        <dl class="grid sm:grid-cols-[140px_minmax(0,1fr)] gap-x-4 gap-y-1 sm:gap-y-2 text-[15.5px] leading-snug">
+        <div class="flex flex-col gap-3">
           {% for s in story.lines %}
-          <dt class="font-bold text-muted {{ 'mt-2 sm:mt-0' if not loop.first }}">{{ s.label }}</dt>
-          <dd>{{ s.text }}{% if s.sources %}{{ ui.cite(s.sources[0]) }}{% endif %}</dd>
+          {% set risk = loop.last %}
+          <div class="{{ 'rounded-[10px] bg-badbg/60 border-l-[3px] border-bad px-3.5 py-2.5' if risk else 'pl-3.5 border-l-[3px] ' ~ ('border-brand' if loop.index == 2 else 'border-line') }}">
+            <p class="text-[11px] font-bold uppercase tracking-[.08em] {{ 'text-bad' if risk else 'text-muted' }}">{{ s.label }}</p>
+            <p class="mt-0.5 text-[16px] leading-snug text-ink">{{ s.text }}{% if s.sources %}{{ ui.cite(s.sources[0]) }}{% endif %}</p>
+          </div>
           {% endfor %}
-        </dl>
+        </div>
         {% elif ai_status.status == "running" %}
         <div class="space-y-3 animate-pulse" aria-label="AI analysis running">
           {% for w in ["92%", "80%", "86%"] %}<div class="h-4 rounded bg-chip" style="width: {{ w }}"></div>{% endfor %}
