@@ -52,3 +52,16 @@ PROVIDER_DOC_FOLDERS = ("medical",)
 
 # How far ahead "upcoming" looks, in days.
 UPCOMING_DAYS = 21
+
+# ---- Red-flag thresholds (app/core/flags.py) ----
+# Stages at or after which a lawsuit has been filed (the limitations date no longer threatens the claim).
+SUIT_STAGES = ("Litigation", "Trial", "Disbursement", "Closed")
+OVERDUE_HIGH_DAYS = 30        # an open task overdue by more than this makes the overdue flag "high"
+SOL_WARN_DAYS = 180           # limitations date within this many days (before suit) is flagged
+SOL_HIGH_DAYS = 90            # ... and "high" within this many
+NO_CLIENT_CONTACT_DAYS = 30   # no email/call with the client for longer than this
+TREATMENT_GAP_DAYS = 60       # gap between consecutive dated treatment items for one provider
+TREATMENT_MIN_ITEMS = 3       # fewer dated items than this per provider = too thin to judge a gap
+FLAG_DOC_CHUNK_CHARS = 60000  # max characters of document text sent to the model per call
+FLAG_MAX_ASSERTIONS = 15      # key factual assertions extracted from the case file
+FLAG_QUOTE_MATCH = 90         # rapidfuzz partial_ratio needed for a quote to count as found in its source

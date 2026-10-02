@@ -34,7 +34,16 @@ def _flags(con, mid: int, t: date):
         return None
     # Rules depend on today, so they run live (fast, code). Contradictions come from the last AI run.
     stored = flags.load(mid) if hasattr(flags, "load") else None
-    ctr = stored["contradictions"] if stored else []
+    # Two findings on the same case-file record about the same subject (shared title word) are one problem,
+    # e.g. the same claim contradicted by two documents. Keep the first (stored order = stronger first).
+    ctr, seen = [], []
+    for f in (stored["contradictions"] if stored else []):
+        anchor = f.evidence[0].source if f.evidence else None
+        words = {w for w in re.findall(r"[a-z]+", f.title.lower()) if len(w) > 5}
+        if any(anchor == a and words & w for a, w in seen):
+            continue
+        seen.append((anchor, words))
+        ctr.append(f)
     ai = stored["ai"] if stored else "not run"
     # The overdue-task rule repeats the "Do next" block on this screen, so it is not shown twice.
     rules = [f for f in flags.rule_flags(con, mid, t) if f.key != "rule:overdue_tasks"]
